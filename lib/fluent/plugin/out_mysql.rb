@@ -5,7 +5,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   config_param :port, :integer, :default => nil
   config_param :database, :string
   config_param :username, :string
-  config_param :password, :string => nil
+  config_param :password, :string, :default => ''
 
   config_param :key_names, :string, :default => nil # nil allowed for json format
   config_param :sql, :string, :default => nil
@@ -13,6 +13,8 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   config_param :columns, :string, :default => nil
 
   config_param :format, :string, :default => "raw" # or json
+
+  attr_accessor :handler
 
   def initialize
     super
@@ -44,7 +46,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
       begin
         # using nil to pass call of @handler.escape (@handler is set in #start)
         if @format == 'json'
-          pseudo_bind(@sql, nil)
+          pseudo_bind(@sql, [nil])
         else
           pseudo_bind(@sql, @key_names.map{|n| nil})
         end
@@ -66,9 +68,9 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
 
   def start
     super
-    @handler = Mysql2::Client.new({:host => @host, :port => @port,
-                                    :username => @username, :password => @password,
-                                    :database => @database})
+    @handler ||= Mysql2::Client.new({:host => @host, :port => @port,
+                                      :username => @username, :password => @password,
+                                      :database => @database})
   end
 
   def shutdown
@@ -110,11 +112,11 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   end
 
   def format(tag, time, record)
-    [tag, time, @format_proc.call(record)].to_msgpack
+    [tag, time, @format_proc.call(tag, time, record)].to_msgpack
   end
 
   def write(chunk)
-    chunk.msgpack_each { |time, data|
+    chunk.msgpack_each { |tag, time, data|
       query(@sql, data)
     }
   end
