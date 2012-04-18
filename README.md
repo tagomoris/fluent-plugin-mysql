@@ -1,29 +1,63 @@
-# Fluent::Plugin::Mysql
+# fluent-plugin-mysql
 
-TODO: Write a gem description
+## Component
 
-## Installation
+### MysqlOutput
 
-Add this line to your application's Gemfile:
+Plugin to store mysql tables over SQL, to each columns per values, or to single column as json.
 
-    gem 'fluent-plugin-mysql'
+## Configuration
 
-And then execute:
+### MysqlOutput
 
-    $ bundle
+MysqlOutput needs MySQL server's host/port/database/username/password, and INSERT format as SQL, or as table name and columns.
 
-Or install it yourself as:
+    <match output.by.sql.*>
+      type mysql
+      host master.db.service.local
+      # port 3306 # default
+      database application_logs
+      username myuser
+      password mypass
+      key_names status,bytes,vhost,path,rhost,agent,referer
+      sql INSERT INTO accesslog (status,bytes,vhost,path,rhost,agent,referer) VALUES (?,?,?,?,?,?,?)
+      flush_intervals 5s
+    </match>
+    
+    <match output.by.names.*>
+      type mysql
+      host master.db.service.local
+      database application_logs
+      username myuser
+      password mypass
+      key_names status,bytes,vhost,path,rhost,agent,referer
+      table accesslog
+      # 'columns' names order must be same with 'key_names'
+      columns status,bytes,vhost,path,rhost,agent,referer
+      flush_intervals 5s
+    </match>
 
-    $ gem install fluent-plugin-mysql
+Or, insert json into single column.
 
-## Usage
+    <match output.as.json.*>
+      type mysql
+      host master.db.service.local
+      database application_logs
+      username root
+      table accesslog
+      columns jsondata
+      format json
+      flush_intervals 5s
+    </match>
 
-TODO: Write usage instructions here
+Now, out_mysql cannnot handle tag/time as output data.
 
-## Contributing
+## TODO
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Added some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+* implement 'tag_mapped'
+* implement 'time' and 'tag' in key_names
+
+## Copyright
+
+Copyright:: Copyright (c) 2012- TAGOMORI Satoshi (tagomoris)
+License::   Apache License, Version 2.0
