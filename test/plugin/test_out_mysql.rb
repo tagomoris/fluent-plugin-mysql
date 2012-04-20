@@ -66,17 +66,6 @@ sql INSERT INTO baz (col1,col2,col3,col4) VALUES (?,?,?,?)
     }
   end
 
-  def test_pseudo_bind
-    d = create_driver
-    sql = 'INSERT INTO baz SET col1=?'
-    # assert_equal "INSERT INTO baz SET col1='HOGE'", d.instance.pseudo_bind(sql, ['HOGE'])
-    assert_equal "INSERT INTO baz SET col1=NULL", d.instance.pseudo_bind(sql, [nil])
-    assert_equal "INSERT INTO baz SET col1='2012-04-16 17:38:00'", d.instance.pseudo_bind(sql, [Time.local(2012, 4, 16, 17, 38, 0)])
-  end
-
-  def test_query
-  end
-
   def test_format
     d = create_driver
 

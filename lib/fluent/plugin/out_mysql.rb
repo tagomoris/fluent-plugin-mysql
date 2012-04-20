@@ -18,7 +18,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
 
   def initialize
     super
-    require 'mysql2'
+    require 'mysql2-cs-bind'
   end
 
   def configure(conf)
@@ -44,11 +44,10 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
 
     if @sql
       begin
-        # using nil to pass call of @handler.escape (@handler is set in #start)
         if @format == 'json'
-          pseudo_bind(@sql, [nil])
+          Mysql2::Client.pseudo_bind(@sql, [nil])
         else
-          pseudo_bind(@sql, @key_names.map{|n| nil})
+          Mysql2::Client.pseudo_bind(@sql, @key_names.map{|n| nil})
         end
       rescue ArgumentError => e
         raise Fluent::ConfigError, "mismatch between sql placeholders and key_names"
@@ -68,47 +67,10 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
 
   def start
     super
-    @handler ||= Mysql2::Client.new({:host => @host, :port => @port,
-                                      :username => @username, :password => @password,
-                                      :database => @database})
   end
 
   def shutdown
     super
-    @handler.close
-  end
-
-  def pseudo_bind(sql, values)
-    sql = sql.dup
-
-    placeholders = []
-    search_pos = 0
-    while pos = sql.index('?', search_pos)
-      placeholders.push(pos)
-      search_pos = pos + 1
-    end
-    raise ArgumentError, "mismatch between placeholders number and values arguments" if placeholders.length != values.length
-
-    while pos = placeholders.pop()
-      rawvalue = values.pop()
-      if rawvalue.nil?
-        sql[pos] = 'NULL'
-      elsif rawvalue.is_a?(Time)
-        val = rawvalue.strftime('%Y-%m-%d %H:%M:%S')
-        sql[pos] = "'" + val + "'"
-      else
-        val = @handler.escape(rawvalue.to_s)
-        sql[pos] = "'" + val + "'"
-      end
-    end
-    sql
-  end
-
-  def query(sql, *values)
-    values = values.flatten
-    # pseudo prepared statements
-    return @handler.query(sql) if values.length < 1
-    @handler.query(self.pseudo_bind(sql, values))
   end
 
   def format(tag, time, record)
@@ -116,8 +78,12 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   end
 
   def write(chunk)
+    handler = Mysql2::Client.new({:host => @host, :port => @port,
+                                   :username => @username, :password => @password,
+                                   :database => @database})
     chunk.msgpack_each { |tag, time, data|
-      query(@sql, data)
+      handler.xquery(@sql, data)
     }
+    handler.close
   end
 end
