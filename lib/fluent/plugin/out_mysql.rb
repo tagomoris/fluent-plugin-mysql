@@ -11,6 +11,8 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   config_param :sql, :string, :default => nil
   config_param :table, :string, :default => nil
   config_param :columns, :string, :default => nil
+  config_param :tag_column, :string, :default => nil
+  config_param :time_column, :string, :default => nil
 
   config_param :format, :string, :default => "raw" # or json
 
@@ -27,10 +29,8 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
     # TODO tag_mapped
 
     if @format == 'json'
-      # TODO time, tag, and json values
       @format_proc = Proc.new{|tag, time, record| record.to_json}
     else
-      # TODO time,tag in key_names
       @key_names = @key_names.split(',')
       @format_proc = Proc.new{|tag, time, record| @key_names.map{|k| record[k]}}
     end
@@ -55,12 +55,9 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
     else # columns
       raise Fluent::ConfigError, "table missing" unless @table
       @columns = @columns.split(',')
+      [@tag_column, @time_column].each{|k| @columns << k if k}
       cols = @columns.join(',')
-      placeholders = if @format == 'json'
-                       '?'
-                     else
-                       @key_names.map{|k| '?'}.join(',')
-                     end
+      placeholders = @columns.map{'?'}.join(',')
       @sql = "INSERT INTO #{@table} (#{cols}) VALUES (#{placeholders})"
     end
   end
@@ -74,7 +71,13 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   end
 
   def format(tag, time, record)
-    [tag, time, @format_proc.call(tag, time, record)].to_msgpack
+    data = [].tap{|array|
+      array << @format_proc.call(tag, time, record)
+      array << tag if @tag_column
+      array << time = Time.at(time).to_s if time && @time_column
+     }
+    data = data.first if data.size == 1
+    [tag, time, data].to_msgpack
   end
 
   def write(chunk)
