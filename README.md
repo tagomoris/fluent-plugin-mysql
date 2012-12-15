@@ -34,6 +34,8 @@ MysqlOutput needs MySQL server's host/port/database/username/password, and INSER
       table accesslog
       # 'columns' names order must be same with 'key_names'
       columns status,bytes,vhost,path,rhost,agent,referer
+      tag_column tag   # optional
+      time_column time # optional
       flush_intervals 5s
     </match>
 
@@ -46,6 +48,8 @@ Or, insert json into single column.
       username root
       table accesslog
       columns jsondata
+      tag_column tag   # optional
+      time_column time # optional
       format json
       flush_intervals 5s
     </match>
@@ -55,7 +59,6 @@ Now, out_mysql cannnot handle tag/time as output data.
 ## TODO
 
 * implement 'tag_mapped'
-* implement 'time' and 'tag' in key_names
 
 ## Copyright
 

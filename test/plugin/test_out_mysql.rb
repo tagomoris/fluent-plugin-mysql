@@ -66,6 +66,83 @@ sql INSERT INTO baz (col1,col2,col3,col4) VALUES (?,?,?,?)
     }
   end
 
+  def test_configure_with_tag
+    d = create_driver %[
+host database.local
+database foo
+username bar
+table baz
+columns jsondata
+tag_column tag
+format json
+    ]
+    assert_equal 'INSERT INTO baz (jsondata,tag) VALUES (?,?)', d.instance.sql
+
+    d = create_driver %[
+host database.local
+database foo
+username bar
+password mogera
+key_names field1,field2,field3
+table baz
+columns col1,col2,col3
+tag_column tag
+    ]
+    assert_equal 'INSERT INTO baz (col1,col2,col3,tag) VALUES (?,?,?,?)', d.instance.sql
+  end
+
+  def test_configure_with_time
+    d = create_driver %[
+host database.local
+database foo
+username bar
+table baz
+columns jsondata
+time_column time
+format json
+    ]
+    assert_equal 'INSERT INTO baz (jsondata,time) VALUES (?,?)', d.instance.sql
+
+    d = create_driver %[
+host database.local
+database foo
+username bar
+password mogera
+key_names field1,field2,field3
+table baz
+columns col1,col2,col3
+time_column time
+    ]
+    assert_equal 'INSERT INTO baz (col1,col2,col3,time) VALUES (?,?,?,?)', d.instance.sql
+  end
+
+  def test_configure_with_tag_and_time
+    d = create_driver %[
+host database.local
+database foo
+username bar
+table baz
+columns jsondata
+tag_column tag
+time_column time
+format json
+    ]
+    assert_equal 'INSERT INTO baz (jsondata,tag,time) VALUES (?,?,?)', d.instance.sql
+
+    d = create_driver %[
+host database.local
+database foo
+username bar
+password mogera
+key_names field1,field2,field3
+table baz
+columns col1,col2,col3
+tag_column tag
+time_column time
+    ]
+    assert_equal 'INSERT INTO baz (col1,col2,col3,tag,time) VALUES (?,?,?,?,?)', d.instance.sql
+  end
+
   def test_format
     d = create_driver
 
