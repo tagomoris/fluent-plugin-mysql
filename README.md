@@ -50,14 +50,59 @@ Or, insert json into single column.
       flush_intervals 5s
     </match>
 
-Now, out_mysql cannnot handle tag/time as output data.
+To include time/tag into output, use `include_time_key` and `include_tag_key`, like this:
+
+    <match output.with.tag.and.time.*>
+      type mysql
+      host my.mysql.local
+      database anydatabase
+      username yourusername
+      password secret
+      
+      include_time_key yes
+      ### default `time_format` is ISO-8601
+      # time_format %Y%m%d-%H%M%S
+      ### default `time_key` is 'time'
+      # time_key timekey
+      
+      include_tag_key yes
+      ### default `tag_key` is 'tag'
+      # tag_key tagkey
+      
+      table anydata
+      key_names time,tag,field1,field2,field3,field4
+      sql INSERT INTO baz (coltime,coltag,col1,col2,col3,col4) VALUES (?,?,?,?,?,?)
+    </match>
+
+Or, for json:
+
+    <match output.with.tag.and.time.as.json.*>
+      type mysql
+      host database.local
+      database foo
+      username root
+      
+      include_time_key yes
+      utc   # with UTC timezome output (default: localtime)
+      time_format %Y%m%d-%H%M%S
+      time_key timeattr
+      
+      include_tag_key yes
+      tag_key tagattr
+      table accesslog
+      columns jsondata
+      format json
+    </match>
+    #=> inserted json data into column 'jsondata' with addtional attribute 'timeattr' and 'tagattr'
 
 ## TODO
 
 * implement 'tag_mapped'
-* implement 'time' and 'tag' in key_names
+  * dynamic tag based table selection
 
 ## Copyright
 
-Copyright:: Copyright (c) 2012- TAGOMORI Satoshi (tagomoris)
-License::   Apache License, Version 2.0
+* Copyright
+  * Copyright(C) 2012- TAGOMORI Satoshi (tagomoris)
+* License
+  * Apache License, Version 2.0
