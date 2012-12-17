@@ -77,10 +77,16 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
     [tag, time, @format_proc.call(tag, time, record)].to_msgpack
   end
 
+  def client
+    Mysql2::Client.new({
+        :host => @host, :port => @port,
+        :username => @username, :password => @password,
+        :database => @database
+      })
+  end
+
   def write(chunk)
-    handler = Mysql2::Client.new({:host => @host, :port => @port,
-                                   :username => @username, :password => @password,
-                                   :database => @database})
+    handler = self.client
     chunk.msgpack_each { |tag, time, data|
       handler.xquery(@sql, data)
     }

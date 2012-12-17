@@ -1,4 +1,5 @@
 require 'helper'
+require 'mysql2-cs-bind'
 
 class MysqlOutputTest < Test::Unit::TestCase
   def setup
@@ -15,15 +16,16 @@ format json
 
   def create_driver(conf = CONFIG, tag='test')
     d = Fluent::Test::BufferedOutputTestDriver.new(Fluent::MysqlOutput, tag).configure(conf)
-    obj = Object.new
-    obj.instance_eval {
-      def escape(v)
-        v
+    d.instance.instance_eval {
+      def client
+        obj = Object.new
+        obj.instance_eval {
+          def xquery(*args); [1]; end
+          def close; true; end
+        }
+        obj
       end
-      def query(*args); [1]; end
-      def close; true; end
     }
-    d.instance.handler = obj
     d
   end
 
