@@ -1,6 +1,9 @@
 class Fluent::MysqlOutput < Fluent::BufferedOutput
   Fluent::Plugin.register_output('mysql', self)
 
+  include Fluent::SetTimeKeyMixin
+  include Fluent::SetTagKeyMixin
+  
   config_param :host, :string
   config_param :port, :integer, :default => nil
   config_param :database, :string
@@ -27,10 +30,8 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
     # TODO tag_mapped
 
     if @format == 'json'
-      # TODO time, tag, and json values
       @format_proc = Proc.new{|tag, time, record| record.to_json}
     else
-      # TODO time,tag in key_names
       @key_names = @key_names.split(',')
       @format_proc = Proc.new{|tag, time, record| @key_names.map{|k| record[k]}}
     end
