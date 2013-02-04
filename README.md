@@ -21,7 +21,7 @@ MysqlOutput needs MySQL server's host/port/database/username/password, and INSER
       password mypass
       key_names status,bytes,vhost,path,rhost,agent,referer
       sql INSERT INTO accesslog (status,bytes,vhost,path,rhost,agent,referer) VALUES (?,?,?,?,?,?,?)
-      flush_intervals 5s
+      flush_interval 5s
     </match>
     
     <match output.by.names.*>
@@ -34,7 +34,7 @@ MysqlOutput needs MySQL server's host/port/database/username/password, and INSER
       table accesslog
       # 'columns' names order must be same with 'key_names'
       columns status,bytes,vhost,path,rhost,agent,referer
-      flush_intervals 5s
+      flush_interval 5s
     </match>
 
 Or, insert json into single column.
@@ -47,7 +47,7 @@ Or, insert json into single column.
       table accesslog
       columns jsondata
       format json
-      flush_intervals 5s
+      flush_interval 5s
     </match>
 
 To include time/tag into output, use `include_time_key` and `include_tag_key`, like this:
