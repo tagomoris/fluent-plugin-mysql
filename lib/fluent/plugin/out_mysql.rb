@@ -3,7 +3,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
 
   include Fluent::SetTimeKeyMixin
   include Fluent::SetTagKeyMixin
-  
+
   config_param :host, :string
   config_param :port, :integer, :default => nil
   config_param :database, :string
@@ -82,7 +82,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
     Mysql2::Client.new({
         :host => @host, :port => @port,
         :username => @username, :password => @password,
-        :database => @database
+        :database => @database, :flag => Mysql2::Client::MULTI_STATEMENTS,
       })
   end
 
