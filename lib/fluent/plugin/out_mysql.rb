@@ -82,7 +82,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
     Mysql2::Client.new({
         :host => @host, :port => @port,
         :username => @username, :password => @password,
-        :database => @database, :flag => Mysql2::Client::MULTI_STATEMENTS,
+        :database => @database, :flags => Mysql2::Client::MULTI_STATEMENTS,
       })
   end
 
