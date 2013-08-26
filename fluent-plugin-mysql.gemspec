@@ -7,6 +7,7 @@ Gem::Specification.new do |gem|
   gem.description   = %q{fluent plugin to insert mysql as json(single column) or insert statement}
   gem.summary       = %q{fluent plugin to insert mysql}
   gem.homepage      = "https://github.com/tagomoris/fluent-plugin-mysql"
+  gem.license       = "APLv2"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
