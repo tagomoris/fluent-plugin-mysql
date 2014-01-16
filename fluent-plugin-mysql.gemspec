@@ -17,4 +17,5 @@ Gem::Specification.new do |gem|
   gem.add_runtime_dependency "fluentd"
   gem.add_runtime_dependency "mysql2-cs-bind"
   gem.add_development_dependency "rake"
+  gem.add_development_dependency "jsonpath"
 end
