@@ -33,9 +33,6 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
     case @format
     when 'json'
       @format_proc = Proc.new{|tag, time, record| record.to_json}
-    when 'raw'
-      @key_names = @key_names.split(',')
-      @format_proc = Proc.new{|tag, time, record| @key_names.map{|k| record[k]}}
     when 'jsonpath'
       @key_names = @key_names.split(',')
       @format_proc = Proc.new do |tag, time, record|
@@ -44,6 +41,9 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
           JsonPath.new(k.strip).on(json).first
         end
       end
+    else
+      @key_names = @key_names.split(',')
+      @format_proc = Proc.new{|tag, time, record| @key_names.map{|k| record[k]}}
     end
 
     if @columns.nil? and @sql.nil?
