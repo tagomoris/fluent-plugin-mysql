@@ -156,6 +156,29 @@ format json
     d.run
   end
 
+  def test_jsonpath_format
+    d = create_driver %[
+      host database.local
+      database foo
+      username bar
+      password mogera
+      include_time_key yes
+      utc
+      include_tag_key yes
+      table baz
+      format jsonpath
+      key_names time, tag, id, data.name, tags[0]
+      sql INSERT INTO baz (coltime,coltag,id,name,tag1) VALUES (?,?,?,?,?)
+    ]
+    assert_equal 'INSERT INTO baz (coltime,coltag,id,name,tag1) VALUES (?,?,?,?,?)', d.instance.sql
+
+    time = Time.parse('2012-12-17 01:23:45 UTC').to_i
+    record = { 'id' => 15, 'data'=> {'name' => 'jsonpath' }, 'tags' => ['unit', 'simple'] }
+    d.emit(record, time)
+    d.expect_format ['test', time, ['2012-12-17T01:23:45Z','test',15,'jsonpath','unit']].to_msgpack
+    d.run
+  end
+
   def test_write
     # hmm....
   end

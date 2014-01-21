@@ -95,6 +95,35 @@ Or, for json:
     </match>
     #=> inserted json data into column 'jsondata' with addtional attribute 'timeattr' and 'tagattr'
 
+### JsonPath format
+
+You can use [JsonPath](http://goessner.net/articles/JsonPath/) selectors as key_names, such as:
+
+	<match output.with.jsonpath.format.*>
+	   type mysql
+	   host database.local
+       database foo
+       username bar
+
+       include_time_key yes
+       utc
+       include_tag_key yes
+       table baz
+
+       format jsonpath
+       key_names time, tag, id, data.name, tags[0]
+       sql INSERT INTO baz (coltime,coltag,id,name,tag1) VALUES (?,?,?,?,?)
+	</match>
+
+Which for a record like:
+
+`{ 'id' => 15, 'data'=> {'name' => 'jsonpath' }, 'tags' => ['unit', 'simple'] }`
+
+will generate the following insert values:
+
+`('2012-12-17T01:23:45Z','test',15,'jsonpath','unit')`
+
+
 ## TODO
 
 * implement 'tag_mapped'

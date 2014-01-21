@@ -22,6 +22,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   def initialize
     super
     require 'mysql2-cs-bind'
+    require 'jsonpath'
   end
 
   def configure(conf)
@@ -29,8 +30,17 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
 
     # TODO tag_mapped
 
-    if @format == 'json'
+    case @format
+    when 'json'
       @format_proc = Proc.new{|tag, time, record| record.to_json}
+    when 'jsonpath'
+      @key_names = @key_names.split(',')
+      @format_proc = Proc.new do |tag, time, record|
+        json = record.to_json
+        @key_names.map do |k|
+          JsonPath.new(k.strip).on(json).first
+        end
+      end
     else
       @key_names = @key_names.split(',')
       @format_proc = Proc.new{|tag, time, record| @key_names.map{|k| record[k]}}
