@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 Gem::Specification.new do |gem|
   gem.name          = "fluent-plugin-mysql"
-  gem.version       = "0.0.5"
+  gem.version       = "0.0.6"
   gem.authors       = ["TAGOMORI Satoshi"]
   gem.email         = ["tagomoris@gmail.com"]
   gem.description   = %q{fluent plugin to insert mysql as json(single column) or insert statement}
