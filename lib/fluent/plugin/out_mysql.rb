@@ -42,7 +42,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
         end
       end
     else
-      @key_names = @key_names.split(',')
+      @key_names = @key_names.split(/\s*,\s*/)
       @format_proc = Proc.new{|tag, time, record| @key_names.map{|k| record[k]}}
     end
 
