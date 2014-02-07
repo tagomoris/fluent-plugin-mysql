@@ -52,8 +52,20 @@ username bar
 password mogera
 key_names field1,field2,field3
 table baz
-columns col1,col2,col3
+columns col1, col2 ,col3
     ]
+    assert_equal ['field1', 'field2', 'field3'], d.instance.key_names
+    assert_equal 'INSERT INTO baz (col1,col2,col3) VALUES (?,?,?)', d.instance.sql
+    d = create_driver %[
+host database.local
+database foo
+username bar
+password mogera
+key_names field1 ,field2, field3
+table baz
+columns col1, col2 ,col3
+    ]
+    assert_equal ['field1', 'field2', 'field3'], d.instance.key_names
     assert_equal 'INSERT INTO baz (col1,col2,col3) VALUES (?,?,?)', d.instance.sql
 
     assert_raise(Fluent::ConfigError) {
@@ -66,6 +78,8 @@ key_names field1,field2,field3
 sql INSERT INTO baz (col1,col2,col3,col4) VALUES (?,?,?,?)
       ]
     }
+
+
   end
 
   def test_format

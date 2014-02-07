@@ -34,7 +34,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
     when 'json'
       @format_proc = Proc.new{|tag, time, record| record.to_json}
     when 'jsonpath'
-      @key_names = @key_names.split(',')
+      @key_names = @key_names.split(/\s*,\s*/)
       @format_proc = Proc.new do |tag, time, record|
         json = record.to_json
         @key_names.map do |k|
@@ -65,7 +65,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
       end
     else # columns
       raise Fluent::ConfigError, "table missing" unless @table
-      @columns = @columns.split(',')
+      @columns = @columns.split(/\s*,\s*/)
       cols = @columns.join(',')
       placeholders = if @format == 'json'
                        '?'
