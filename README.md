@@ -1,10 +1,10 @@
-# fluent-plugin-mysql, a plugin for [Fluentd](http://fluentd.org)
+# fluent-plugin-mysql
 
 ## Component
 
 ### MysqlOutput
 
-Plugin to store mysql tables over SQL, to each columns per values, or to single column as json.
+[Fluentd](http://fluentd.org) plugin to store mysql tables over SQL, to each columns per values, or to single column as json.
 
 ## Configuration
 
