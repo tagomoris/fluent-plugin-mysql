@@ -123,6 +123,9 @@ will generate the following insert values:
 
 `('2012-12-17T01:23:45Z','test',15,'jsonpath','unit')`
 
+## Prerequisites
+
+`fluent-plugin-mysql` uses `mysql2` gem, and `mysql2` links against `libmysqlclient`. See [Installing](https://github.com/brianmario/mysql2#installing) for its installation.
 
 ## TODO
 
