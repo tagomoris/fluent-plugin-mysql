@@ -83,7 +83,7 @@ Or, for json:
       username root
       
       include_time_key yes
-      utc   # with UTC timezome output (default: localtime)
+      utc   # with UTC timezone output (default: localtime)
       time_format %Y%m%d-%H%M%S
       time_key timeattr
       
