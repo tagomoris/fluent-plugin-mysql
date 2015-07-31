@@ -8,7 +8,7 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   config_param :port, :integer, :default => nil
   config_param :database, :string
   config_param :username, :string
-  config_param :password, :string, :default => ''
+  config_param :password, :string, :default => '', :secret => true
 
   config_param :key_names, :string, :default => nil # nil allowed for json format
   config_param :sql, :string, :default => nil
