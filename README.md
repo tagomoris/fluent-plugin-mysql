@@ -1,140 +1,179 @@
-# fluent-plugin-mysql
 
-## Component
+# fluent-plugin-mysql-bulk, a plugin for [Fluentd](http://fluentd.org) [![Build Status](https://secure.travis-ci.org/toyama0919/fluent-plugin-mysql-bulk.png?branch=master)](http://travis-ci.org/toyama0919/fluent-plugin-mysql-bulk)
 
-### MysqlOutput
+fluent plugin mysql bulk insert is high performance and on duplicate key update respond.
 
-[Fluentd](http://fluentd.org) plugin to store mysql tables over SQL, to each columns per values, or to single column as json.
+## Installation
 
-## Configuration
+### td-agent(Linux)
 
-### MysqlOutput
+    /usr/lib64/fluent/ruby/bin/fluent-gem install fluent-plugin-mysql-bulk
 
-MysqlOutput needs MySQL server's host/port/database/username/password, and INSERT format as SQL, or as table name and columns.
+### td-agent(Mac)
 
-    <match output.by.sql.*>
-      type mysql
-      host master.db.service.local
-      # port 3306 # default
-      database application_logs
-      username myuser
-      password mypass
-      key_names status,bytes,vhost,path,rhost,agent,referer
-      sql INSERT INTO accesslog (status,bytes,vhost,path,rhost,agent,referer) VALUES (?,?,?,?,?,?,?)
-      flush_interval 5s
-    </match>
-    
-    <match output.by.names.*>
-      type mysql
-      host master.db.service.local
-      database application_logs
-      username myuser
-      password mypass
-      key_names status,bytes,vhost,path,rhost,agent,referer
-      table accesslog
-      # 'columns' names order must be same with 'key_names'
-      columns status,bytes,vhost,path,rhost,agent,referer
-      flush_interval 5s
-    </match>
+    sudo /usr/local/Cellar/td-agent/1.1.XX/bin/fluent-gem install fluent-plugin-mysql-bulk
 
-Or, insert json into single column.
+### fluentd only
 
-    <match output.as.json.*>
-      type mysql
-      host master.db.service.local
-      database application_logs
-      username root
-      table accesslog
-      columns jsondata
-      format json
-      flush_interval 5s
-    </match>
+    gem install fluent-plugin-mysql-bulk
 
-To include time/tag into output, use `include_time_key` and `include_tag_key`, like this:
 
-    <match output.with.tag.and.time.*>
-      type mysql
-      host my.mysql.local
-      database anydatabase
-      username yourusername
-      password secret
-      
-      include_time_key yes
-      ### default `time_format` is ISO-8601
-      # time_format %Y%m%d-%H%M%S
-      ### default `time_key` is 'time'
-      # time_key timekey
-      
-      include_tag_key yes
-      ### default `tag_key` is 'tag'
-      # tag_key tagkey
-      
-      table anydata
-      key_names time,tag,field1,field2,field3,field4
-      sql INSERT INTO baz (coltime,coltag,col1,col2,col3,col4) VALUES (?,?,?,?,?,?)
-    </match>
+## Parameters
 
-Or, for json:
+param|value
+--------|------
+host|database host(default: 127.0.0.1)
+database|database name(require)
+username|user(require)
+password|password(default: blank)
+column_names|bulk insert column (require)
+key_names|value key names, ${time} is placeholder Time.at(time).strftime("%Y-%m-%d %H:%M:%S") (default : column_names)
+table|bulk insert table (require)
+on_duplicate_key_update|on duplicate key update enable (true:false)
+on_duplicate_update_keys|on duplicate key update column, comma separator
 
-    <match output.with.tag.and.time.as.json.*>
-      type mysql
-      host database.local
-      database foo
-      username root
-      
-      include_time_key yes
-      utc   # with UTC timezone output (default: localtime)
-      time_format %Y%m%d-%H%M%S
-      time_key timeattr
-      
-      include_tag_key yes
-      tag_key tagattr
-      table accesslog
-      columns jsondata
-      format json
-    </match>
-    #=> inserted json data into column 'jsondata' with addtional attribute 'timeattr' and 'tagattr'
+## Configuration Example(bulk insert)
 
-### JsonPath format
+```
+<match mysql.input>
+  type mysql_bulk
+  host localhost
+  database test_app_development
+  username root
+  password hogehoge
+  column_names id,user_name,created_at,updated_at
+  table users
+  flush_interval 10s
+</match>
+```
 
-You can use [JsonPath](http://goessner.net/articles/JsonPath/) selectors as key_names, such as:
+Assume following input is coming:
 
-	<match output.with.jsonpath.format.*>
-	   type mysql
-	   host database.local
-       database foo
-       username bar
+```js
+mysql.input: {"user_name":"toyama","created_at":"2014/01/03 21:35:15","updated_at":"2014/01/03 21:35:15","dummy":"hogehoge"}
+mysql.input: {"user_name":"toyama2","created_at":"2014/01/03 21:35:21","updated_at":"2014/01/03 21:35:21","dummy":"hogehoge"}
+mysql.input: {"user_name":"toyama3","created_at":"2014/01/03 21:35:27","updated_at":"2014/01/03 21:35:27","dummy":"hogehoge"}
+```
 
-       include_time_key yes
-       utc
-       include_tag_key yes
-       table baz
+then result becomes as below (indented):
 
-       format jsonpath
-       key_names time, tag, id, data.name, tags[0]
-       sql INSERT INTO baz (coltime,coltag,id,name,tag1) VALUES (?,?,?,?,?)
-	</match>
+```sql
++-----+-----------+---------------------+---------------------+
+| id  | user_name | created_at          | updated_at          |
++-----+-----------+---------------------+---------------------+
+| 1   | toyama    | 2014-01-03 21:35:15 | 2014-01-03 21:35:15 |
+| 2   | toyama2   | 2014-01-03 21:35:21 | 2014-01-03 21:35:21 |
+| 3   | toyama3   | 2014-01-03 21:35:27 | 2014-01-03 21:35:27 |
++-----+-----------+---------------------+---------------------+
+```
 
-Which for a record like:
+running query
 
-`{ 'id' => 15, 'data'=> {'name' => 'jsonpath' }, 'tags' => ['unit', 'simple'] }`
+```sql
+INSERT INTO users (id,user_name,created_at,updated_at) VALUES (NULL,'toyama','2014/01/03 21:35:15','2014/01/03 21:35:15'),(NULL,'toyama2','2014/01/03 21:35:21','2014/01/03 21:35:21')
+```
 
-will generate the following insert values:
+## Configuration Example(bulk insert , if duplicate error record update)
 
-`('2012-12-17T01:23:45Z','test',15,'jsonpath','unit')`
+```
+<match mysql.input>
+  type mysql_bulk
+  host localhost
+  database test_app_development
+  username root
+  password hogehoge
+  column_names id,user_name,created_at,updated_at
+  table users
+  on_duplicate_key_update true
+  on_duplicate_update_keys user_name,updated_at
+  flush_interval 60s
+</match>
+```
 
-## Prerequisites
+Assume following input is coming:
 
-`fluent-plugin-mysql` uses `mysql2` gem, and `mysql2` links against `libmysqlclient`. See [Installing](https://github.com/brianmario/mysql2#installing) for its installation.
+```js
+mysql.input: {"id":"1" ,"user_name":"toyama7","created_at":"2014/01/03 21:58:03","updated_at":"2014/01/03 21:58:03"}
+mysql.input: {"id":"2" ,"user_name":"toyama7","created_at":"2014/01/03 21:58:06","updated_at":"2014/01/03 21:58:06"}
+mysql.input: {"id":"3" ,"user_name":"toyama7","created_at":"2014/01/03 21:58:08","updated_at":"2014/01/03 21:58:08"}
+mysql.input: {"id":"10","user_name":"toyama7","created_at":"2014/01/03 21:58:18","updated_at":"2014/01/03 21:58:18"}
+```
 
-## TODO
+then result becomes as below (indented):
 
-* implement 'tag_mapped'
-  * dynamic tag based table selection
+```sql
++-----+-----------+---------------------+---------------------+
+| id  | user_name | created_at          | updated_at          |
++-----+-----------+---------------------+---------------------+
+|   1 | toyama7   | 2014-01-03 21:35:15 | 2014-01-03 21:58:03 |
+|   2 | toyama7   | 2014-01-03 21:35:21 | 2014-01-03 21:58:06 |
+|   3 | toyama7   | 2014-01-03 21:35:27 | 2014-01-03 21:58:08 |
+|  10 | toyama7   | 2014-01-03 21:58:18 | 2014-01-03 21:58:18 |
++-----+-----------+---------------------+---------------------+
+```
+
+if duplicate id , update username and updated_at
+
+
+## Configuration Example(bulk insert,fluentd key different column name)
+
+```
+<match mysql.input>
+  type mysql_bulk
+  host localhost
+  database test_app_development
+  username root
+  password hogehoge
+  column_names id,user_name,created_at,updated_at
+  key_names id,user,created_date,updated_date
+  table users
+  flush_interval 10s
+</match>
+```
+
+Assume following input is coming:
+
+```js
+mysql.input: {"user":"toyama","created_date":"2014/01/03 21:35:15","updated_date":"2014/01/03 21:35:15","dummy":"hogehoge"}
+mysql.input: {"user":"toyama2","created_date":"2014/01/03 21:35:21","updated_date":"2014/01/03 21:35:21","dummy":"hogehoge"}
+mysql.input: {"user":"toyama3","created_date":"2014/01/03 21:35:27","updated_date":"2014/01/03 21:35:27","dummy":"hogehoge"}
+```
+
+then result becomes as below (indented):
+
+```sql
++-----+-----------+---------------------+---------------------+
+| id  | user_name | created_at          | updated_at          |
++-----+-----------+---------------------+---------------------+
+| 1   | toyama    | 2014-01-03 21:35:15 | 2014-01-03 21:35:15 |
+| 2   | toyama2   | 2014-01-03 21:35:21 | 2014-01-03 21:35:21 |
+| 3   | toyama3   | 2014-01-03 21:35:27 | 2014-01-03 21:35:27 |
++-----+-----------+---------------------+---------------------+
+```
+
+
+
+
+## spec
+
+```
+bundle install
+rake test
+```
+
+## todo
+
+divide bulk insert(exsample 1000 per)
+
+
+## Contributing
+
+1. Fork it
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create new [Pull Request](../../pull/new/master)
 
 ## Copyright
 
-* Copyright
-  * Copyright(C) 2012- TAGOMORI Satoshi (tagomoris)
-* License
-  * Apache License, Version 2.0
+Copyright (c) 2013 Hiroshi Toyama. See [LICENSE](LICENSE) for details.
