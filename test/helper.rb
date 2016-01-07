@@ -23,6 +23,7 @@ unless ENV.has_key?('VERBOSE')
 end
 
 require 'fluent/plugin/out_mysql'
+require 'fluent/plugin/out_mysql_bulk'
 
 class Test::Unit::TestCase
 end
