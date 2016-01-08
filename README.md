@@ -1,22 +1,12 @@
 
-# fluent-plugin-mysql-bulk, a plugin for [Fluentd](http://fluentd.org) [![Build Status](https://secure.travis-ci.org/toyama0919/fluent-plugin-mysql-bulk.png?branch=master)](http://travis-ci.org/toyama0919/fluent-plugin-mysql-bulk)
+# fluent-plugin-mysql, a plugin for [Fluentd](http://fluentd.org) [![Build Status](https://secure.travis-ci.org/tagomoris/fluent-plugin-mysql.png?branch=master)](http://travis-ci.org/tagomoris/fluent-plugin-mysql)
 
 fluent plugin mysql bulk insert is high performance and on duplicate key update respond.
 
-## Installation
+## Note
+fluent-plugin-mysql-bulk merged this repository.
 
-### td-agent(Linux)
-
-    /usr/lib64/fluent/ruby/bin/fluent-gem install fluent-plugin-mysql-bulk
-
-### td-agent(Mac)
-
-    sudo /usr/local/Cellar/td-agent/1.1.XX/bin/fluent-gem install fluent-plugin-mysql-bulk
-
-### fluentd only
-
-    gem install fluent-plugin-mysql-bulk
-
+[mysql plugin](README_mysql.md) is deprecated. You should use mysql_bulk.
 
 ## Parameters
 
