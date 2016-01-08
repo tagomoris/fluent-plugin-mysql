@@ -135,6 +135,6 @@ will generate the following insert values:
 ## Copyright
 
 * Copyright
-  * Copyright(C) 2012- TAGOMORI Satoshi (tagomoris)
+  * Copyright(C) 2016- TAGOMORI Satoshi (tagomoris)
 * License
   * Apache License, Version 2.0

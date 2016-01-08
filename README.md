@@ -166,4 +166,4 @@ divide bulk insert(exsample 1000 per)
 
 ## Copyright
 
-Copyright (c) 2013 Hiroshi Toyama. See [LICENSE](LICENSE) for details.
+Copyright (c) 2016 Hiroshi Toyama. See [LICENSE](LICENSE) for details.
