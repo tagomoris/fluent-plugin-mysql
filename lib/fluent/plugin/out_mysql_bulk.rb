@@ -23,6 +23,11 @@ module Fluent
       require 'mysql2-cs-bind'
     end
 
+    # Define `log` method for v0.10.42 or earlier
+    unless method_defined?(:log)
+      define_method("log") { $log }
+    end
+
     def configure(conf)
       super
 
@@ -93,7 +98,7 @@ module Fluent
       sql = "INSERT INTO #{@table} (#{@column_names.join(',')}) VALUES #{values.join(',')}"
       sql += @on_duplicate_key_update_sql if @on_duplicate_key_update
 
-      $log.info "bulk insert values size => #{values.size}"
+      log.info "bulk insert values size => #{values.size}"
       @handler.xquery(sql)
       @handler.close
     end
