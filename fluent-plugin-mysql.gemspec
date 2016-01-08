@@ -2,8 +2,8 @@
 Gem::Specification.new do |gem|
   gem.name          = "fluent-plugin-mysql"
   gem.version       = "0.0.8"
-  gem.authors       = ["TAGOMORI Satoshi"]
-  gem.email         = ["tagomoris@gmail.com"]
+  gem.authors       = ["TAGOMORI Satoshi", "Toyama Hiroshi"]
+  gem.email         = ["tagomoris@gmail.com", "toyama0919@gmail.com"]
   gem.description   = %q{fluent plugin to insert mysql as json(single column) or insert statement}
   gem.summary       = %q{fluent plugin to insert mysql}
   gem.homepage      = "https://github.com/tagomoris/fluent-plugin-mysql"

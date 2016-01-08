@@ -33,6 +33,8 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   def configure(conf)
     super
 
+    log.warn "[mysql] This plugin deprecated. You should use mysql_bulk."
+
     # TODO tag_mapped
 
     case @format
