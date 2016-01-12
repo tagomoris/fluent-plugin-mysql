@@ -3,18 +3,30 @@ module Fluent
   class Fluent::MysqlBulkOutput < Fluent::BufferedOutput
     Fluent::Plugin.register_output('mysql_bulk', self)
 
-    config_param :host, :string, default: '127.0.0.1'
-    config_param :port, :integer, default: 3306
-    config_param :database, :string
-    config_param :username, :string
-    config_param :password, :string, default: '', secret: true
+    config_param :host, :string, default: '127.0.0.1',
+                 :desc => "Database host."
+    config_param :port, :integer, default: 3306,
+                 :desc => "Database port."
+    config_param :database, :string,
+                 :desc => "Database name."
+    config_param :username, :string,
+                 :desc => "Database user."
+    config_param :password, :string, default: '', secret: true,
+                 :desc => "Database password."
 
-    config_param :column_names, :string
-    config_param :key_names, :string, default: nil
-    config_param :table, :string
+    config_param :column_names, :string,
+                 :desc => "Bulk insert column."
+    config_param :key_names, :string, default: nil,
+                 :desc => <<-DESC
+Value key names, ${time} is placeholder Time.at(time).strftime("%Y-%m-%d %H:%M:%S").
+DESC
+    config_param :table, :string,
+                 :desc => "Bulk insert table."
 
-    config_param :on_duplicate_key_update, :bool, default: false
-    config_param :on_duplicate_update_keys, :string, default: nil
+    config_param :on_duplicate_key_update, :bool, default: false,
+                 :desc => "On duplicate key update enable."
+    config_param :on_duplicate_update_keys, :string, default: nil,
+                 :desc => "On duplicate key update column, comma separator."
 
     attr_accessor :handler
 
