@@ -13,6 +13,7 @@ fluent-plugin-mysql-bulk merged this repository.
 param|value
 --------|------
 host|database host(default: 127.0.0.1)
+port|database port(default: 3306)
 database|database name(require)
 username|user(require)
 password|password(default: blank)
