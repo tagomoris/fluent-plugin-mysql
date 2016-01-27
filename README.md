@@ -27,7 +27,7 @@ on_duplicate_update_keys|on duplicate key update column, comma separator
 
 ```
 <match mysql.input>
-  type mysql_bulk
+  @type mysql_bulk
   host localhost
   database test_app_development
   username root
@@ -68,7 +68,7 @@ INSERT INTO users (id,user_name,created_at,updated_at) VALUES (NULL,'toyama','20
 
 ```
 <match mysql.input>
-  type mysql_bulk
+  @type mysql_bulk
   host localhost
   database test_app_development
   username root
@@ -110,7 +110,7 @@ if duplicate id , update username and updated_at
 
 ```
 <match mysql.input>
-  type mysql_bulk
+  @type mysql_bulk
   host localhost
   database test_app_development
   username root
