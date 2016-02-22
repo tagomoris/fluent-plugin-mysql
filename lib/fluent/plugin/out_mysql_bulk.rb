@@ -20,6 +20,8 @@ module Fluent
                  :desc => <<-DESC
 Value key names, ${time} is placeholder Time.at(time).strftime("%Y-%m-%d %H:%M:%S").
 DESC
+    config_param :json_key_names, :string, default: nil,
+                  :desc => "Key names which store data as json"
     config_param :table, :string,
                  :desc => "Bulk insert table."
 
@@ -63,6 +65,7 @@ DESC
 
       @column_names = @column_names.split(',')
       @key_names = @key_names.nil? ? @column_names : @key_names.split(',')
+      @json_key_names = @json_key_names.split(',') if @json_key_names
     end
 
     def start
@@ -128,6 +131,10 @@ DESC
               value = record[key]
             else
               value = record[key].slice(0, @max_lengths[i])
+            end
+
+            if @json_key_names && @json_key_names.include?(key)
+              value = value.to_json
             end
           end
           values << value
