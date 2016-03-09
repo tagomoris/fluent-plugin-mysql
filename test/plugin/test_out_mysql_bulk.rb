@@ -112,6 +112,18 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
         on_duplicate_update_keys user_name,updated_at
       ]
     end
+
+    assert_nothing_raised(Fluent::ConfigError) do
+      d = create_driver %[
+        database test_app_development
+        username root
+        password hogehoge
+        key_names id,url,request_headers,params,created_at,updated_at
+        column_names id,url,request_headers_json,params_json,created_date,updated_date
+        json_key_names request_headers,params
+        table access
+      ]
+    end
   end
 
   def test_variables
@@ -127,6 +139,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
 
     assert_equal ['id','user_name','created_at','updated_at'], d.instance.key_names
     assert_equal ['id','user_name','created_at','updated_at'], d.instance.column_names
+    assert_equal nil, d.instance.json_key_names
     assert_equal " ON DUPLICATE KEY UPDATE user_name = VALUES(user_name),updated_at = VALUES(updated_at)", d.instance.instance_variable_get(:@on_duplicate_key_update_sql)
 
     d = create_driver %[
@@ -139,6 +152,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
 
     assert_equal ['id','user_name','created_at','updated_at'], d.instance.key_names
     assert_equal ['id','user_name','created_at','updated_at'], d.instance.column_names
+    assert_equal nil, d.instance.json_key_names
     assert_nil d.instance.instance_variable_get(:@on_duplicate_key_update_sql)
 
     d = create_driver %[
@@ -152,6 +166,22 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
 
     assert_equal ['id','user_name','created_at','updated_at'], d.instance.key_names
     assert_equal ['id','user','created_date','updated_date'], d.instance.column_names
+    assert_equal nil, d.instance.json_key_names
+    assert_nil d.instance.instance_variable_get(:@on_duplicate_key_update_sql)
+
+    d = create_driver %[
+      database test_app_development
+      username root
+      password hogehoge
+      key_names id,url,request_headers,params,created_at,updated_at
+      column_names id,url,request_headers_json,params_json,created_date,updated_date
+      json_key_names request_headers,params
+      table access
+    ]
+
+    assert_equal ['id','url','request_headers','params','created_at','updated_at'], d.instance.key_names
+    assert_equal ['id','url','request_headers_json','params_json','created_date','updated_date'], d.instance.column_names
+    assert_equal ['request_headers','params'], d.instance.json_key_names
     assert_nil d.instance.instance_variable_get(:@on_duplicate_key_update_sql)
   end
 end
