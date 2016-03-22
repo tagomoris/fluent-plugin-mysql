@@ -1,5 +1,5 @@
 
-# fluent-plugin-mysql, a plugin for [Fluentd](http://fluentd.org)
+# fluent-plugin-mysql, a plugin for [Fluentd](http://fluentd.org) [![Build Status](https://secure.travis-ci.org/tagomoris/fluent-plugin-mysql.png?branch=master)](http://travis-ci.org/tagomoris/fluent-plugin-mysql)
 
 fluent plugin mysql bulk insert is high performance and on duplicate key update respond.
 
