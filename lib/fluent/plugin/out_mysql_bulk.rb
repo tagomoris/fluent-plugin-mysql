@@ -13,6 +13,11 @@ module Fluent
                  :desc => "Database user."
     config_param :password, :string, default: '', secret: true,
                  :desc => "Database password."
+    config_param :sslca, :string, default: '',
+                 :desc => "Filename for SSL bundle CA cert."
+    config_param :sslcapath, :string, default: '',
+                 :desc => "Path to SSL bundle CA cert."
+    config_param :sslcapath, :string, default: '',
 
     config_param :column_names, :string,
                  :desc => "Bulk insert column."
@@ -99,6 +104,8 @@ DESC
           username: @username,
           password: @password,
           database: @database,
+          sslca: @sslca,
+          sslcapath: @sslcapath,
           flags: Mysql2::Client::MULTI_STATEMENTS
         )
     end
@@ -144,3 +151,4 @@ DESC
     end
   end
 end
+
