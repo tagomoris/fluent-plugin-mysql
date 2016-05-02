@@ -3,6 +3,8 @@ module Fluent
   class Fluent::MysqlBulkOutput < Fluent::BufferedOutput
     Fluent::Plugin.register_output('mysql_bulk', self)
 
+    include Fluent::SetTimeKeyMixin
+
     config_param :host, :string, default: '127.0.0.1',
                  :desc => "Database host."
     config_param :port, :integer, default: 3306,
