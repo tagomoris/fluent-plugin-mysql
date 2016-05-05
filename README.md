@@ -142,7 +142,90 @@ then result becomes as below (indented):
 +-----+-----------+---------------------+---------------------+
 ```
 
+## Configuration Example(bulk insert, time complement)
 
+```
+<match mysql.input>
+  @type mysql_bulk
+  host localhost
+  database test_app_development
+  username root
+  password hogehoge
+  column_names id,user_name,created_at
+  key_names id,user,${time}
+  table users
+  flush_interval 10s
+</match>
+```
+
+Assume following input is coming:
+
+```js
+2014-01-03 21:35:15+09:00: mysql.input: {"user":"toyama","dummy":"hogehoge"}
+2014-01-03 21:35:21+09:00: mysql.input: {"user":"toyama2","dummy":"hogehoge"}
+2014-01-03 21:35:27+09:00: mysql.input: {"user":"toyama3","dummy":"hogehoge"}
+```
+
+then `created_at` column is set from time attribute in a fluentd packet:
+
+```sql
++-----+-----------+---------------------+
+| id  | user_name | created_at          |
++-----+-----------+---------------------+
+| 1   | toyama    | 2014-01-03 21:35:15 |
+| 2   | toyama2   | 2014-01-03 21:35:21 |
+| 3   | toyama3   | 2014-01-03 21:35:27 |
++-----+-----------+---------------------+
+```
+
+## Configuration Example(bulk insert, time complement with specific timezone)
+
+As described above, `${time}` placeholder sets time with `Time.at(time).strftime("%Y-%m-%d %H:%M:%S")`.
+This handles the time with fluentd server default timezone.
+If you want to use the specific timezone, you can use the include_time_key feature.
+This is useful in case fluentd server and mysql have different timezone.
+You can use various timezone format. See below.
+http://docs.fluentd.org/articles/formatter-plugin-overview
+
+```
+<match mysql.input>
+  @type mysql_bulk
+  host localhost
+  database test_app_development
+  username root
+  password hogehoge
+
+  include_time_key yes
+  timezone Asia/Tokyo
+  time_format %Y-%m-%d %H:%M:%S
+  time_key created_at
+
+  column_names id,user_name,created_at
+  key_names id,user,created_at
+  table users
+  flush_interval 10s
+</match>
+```
+
+Assume following input is coming:
+
+```js
+2014-01-03 21:35:15+09:00: mysql.input: {"user":"toyama","dummy":"hogehoge"}
+2014-01-03 21:35:21+09:00: mysql.input: {"user":"toyama2","dummy":"hogehoge"}
+2014-01-03 21:35:27+09:00: mysql.input: {"user":"toyama3","dummy":"hogehoge"}
+```
+
+then `created_at` column is set from time attribute in a fluentd packet with timezone converted:
+
+```sql
++-----+-----------+---------------------+
+| id  | user_name | created_at          |
++-----+-----------+---------------------+
+| 1   | toyama    | 2014-01-03 12:35:15 |
+| 2   | toyama2   | 2014-01-03 12:35:21 |
+| 3   | toyama3   | 2014-01-03 12:35:27 |
++-----+-----------+---------------------+
+```
 
 
 ## spec
