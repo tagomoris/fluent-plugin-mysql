@@ -196,7 +196,7 @@ http://docs.fluentd.org/articles/formatter-plugin-overview
   password hogehoge
 
   include_time_key yes
-  timezone Asia/Tokyo
+  timezone +00
   time_format %Y-%m-%d %H:%M:%S
   time_key created_at
 
@@ -207,7 +207,7 @@ http://docs.fluentd.org/articles/formatter-plugin-overview
 </match>
 ```
 
-Assume following input is coming:
+Assume following input is coming(fluentd server is using JST +09 timezone):
 
 ```js
 2014-01-03 21:35:15+09:00: mysql.input: {"user":"toyama","dummy":"hogehoge"}
@@ -215,7 +215,7 @@ Assume following input is coming:
 2014-01-03 21:35:27+09:00: mysql.input: {"user":"toyama3","dummy":"hogehoge"}
 ```
 
-then `created_at` column is set from time attribute in a fluentd packet with timezone converted:
+then `created_at` column is set from time attribute in a fluentd packet with timezone converted to +00 UTC:
 
 ```sql
 +-----+-----------+---------------------+
