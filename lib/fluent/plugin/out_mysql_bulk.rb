@@ -3,8 +3,6 @@ module Fluent
   class Fluent::MysqlBulkOutput < Fluent::BufferedOutput
     Fluent::Plugin.register_output('mysql_bulk', self)
 
-    include Fluent::SetTimeKeyMixin
-
     config_param :host, :string, default: '127.0.0.1',
                  :desc => "Database host."
     config_param :port, :integer, default: 3306,
@@ -15,6 +13,10 @@ module Fluent
                  :desc => "Database user."
     config_param :password, :string, default: '', secret: true,
                  :desc => "Database password."
+    config_param :sslca, :string, default: '',
+                 :desc => "Filename for SSL bundle CA cert."
+    config_param :sslcapath, :string, default: '',
+                 :desc => "Path to SSL bundle CA cert."
 
     config_param :column_names, :string,
                  :desc => "Bulk insert column."
@@ -101,6 +103,8 @@ DESC
           username: @username,
           password: @password,
           database: @database,
+          sslca: @sslca,
+          sslcapath: @sslcapath,
           flags: Mysql2::Client::MULTI_STATEMENTS
         )
     end
