@@ -65,8 +65,8 @@ DESC
         @on_duplicate_key_update_sql += updates.join(',')
       end
 
-      @column_names = @column_names.split(',')
-      @key_names = @key_names.nil? ? @column_names : @key_names.split(',')
+      @column_names = @column_names.split(',').collect(&:strip)
+      @key_names = @key_names.nil? ? @column_names : @key_names.split(',').collect(&:strip)
       @json_key_names = @json_key_names.split(',') if @json_key_names
     end
 

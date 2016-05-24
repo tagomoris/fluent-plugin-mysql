@@ -184,4 +184,29 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     assert_equal ['request_headers','params'], d.instance.json_key_names
     assert_nil d.instance.instance_variable_get(:@on_duplicate_key_update_sql)
   end
+
+  def test_spaces_in_columns
+    d = create_driver %[
+      database test_app_development
+      username root
+      password hogehoge
+      column_names id, user_name, created_at, updated_at
+      table users
+    ]
+
+    assert_equal ['id','user_name','created_at','updated_at'], d.instance.key_names
+    assert_equal ['id','user_name','created_at','updated_at'], d.instance.column_names
+
+    d = create_driver %[
+      database test_app_development
+      username root
+      password hogehoge
+      key_names id, user_name, created_at, updated_at
+      column_names id, user_name, created_at, updated_at
+      table users
+    ]
+
+    assert_equal ['id','user_name','created_at','updated_at'], d.instance.key_names
+    assert_equal ['id','user_name','created_at','updated_at'], d.instance.column_names
+  end
 end
