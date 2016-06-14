@@ -19,6 +19,7 @@ username|user(require)
 password|password(default: blank)
 column_names|bulk insert column (require)
 key_names|value key names, ${time} is placeholder Time.at(time).strftime("%Y-%m-%d %H:%M:%S") (default : column_names)
+json_key_names|Key names which store data as json, comma separator.
 table|bulk insert table (require)
 on_duplicate_key_update|on duplicate key update enable (true:false)
 on_duplicate_update_keys|on duplicate key update column, comma separator
