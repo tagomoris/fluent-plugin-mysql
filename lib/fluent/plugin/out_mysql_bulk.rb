@@ -24,13 +24,18 @@ Value key names, ${time} is placeholder Time.at(time).strftime("%Y-%m-%d %H:%M:%
 DESC
     config_param :json_key_names, :string, default: nil,
                   :desc => "Key names which store data as json"
-    config_param :table, :string,
+    config_param :table, :string, :default => nil
                  :desc => "Bulk insert table."
 
     config_param :on_duplicate_key_update, :bool, default: false,
                  :desc => "On duplicate key update enable."
     config_param :on_duplicate_update_keys, :string, default: nil,
                  :desc => "On duplicate key update column, comma separator."
+
+    config_param :table_prefix, :string, :default=> "dump_", :desc => ""
+    config_param :table_date_format, :string, :default=> "%Y%m%d"
+    config_param :table_mod_key, :string, :default => nil
+    config_param :table_mod_val, :integer, :default => 1
 
     attr_accessor :handler
 
@@ -72,6 +77,9 @@ DESC
 
     def start
       super
+      if @table.nil?
+        return
+      end
       result = client.xquery("SHOW COLUMNS FROM #{@table}")
       @max_lengths = []
       @column_names.each do |column|
@@ -91,7 +99,7 @@ DESC
     end
 
     def format(tag, time, record)
-      [tag, time, format_proc.call(tag, time, record)].to_msgpack
+      [tag, time, format_table(tag, time, record), format_proc.call(tag, time, record)].to_msgpack
     end
 
     def client
@@ -107,20 +115,35 @@ DESC
 
     def write(chunk)
       @handler = client
-      values = []
+      table_values = {}
       values_template = "(#{ @column_names.map { |key| '?' }.join(',') })"
-      chunk.msgpack_each do |tag, time, data|
-        values << Mysql2::Client.pseudo_bind(values_template, data)
+      
+      chunk.msgpack_each do |tag, time, table, data|
+        if !table_values.has_key?(table)
+          table_values[table] = []
+        end
+        table_values[table] << Mysql2::Client.pseudo_bind(values_template, data)
       end
-      sql = "INSERT INTO #{@table} (#{@column_names.join(',')}) VALUES #{values.join(',')}"
-      sql += @on_duplicate_key_update_sql if @on_duplicate_key_update
 
-      log.info "bulk insert values size => #{values.size}"
-      @handler.xquery(sql)
+      table_values.each { |table, values|
+        sql = "INSERT INTO #{table} (#{@column_names.join(',')}) VALUES #{values.join(',')}"
+        sql += @on_duplicate_key_update_sql if @on_duplicate_key_update
+        @handler.xquery(sql)
+        log.info "bulk insert values size => #{values.size}"
+      }
       @handler.close
     end
 
     private
+
+    def format_table(tag, time, record)
+      table_name = @table
+      if @table_prefix
+        table_name = "#{@table_prefix}#{record[@table_mod_key].to_i % @table_mod_val}" if @table_mod_key
+        table_name = "#{@table_prefix}#{Time.at(time).strftime(@table_date_format)}" if @table_date_format
+      end
+      table_name
+    end
 
     def format_proc
       proc do |tag, time, record|
@@ -129,7 +152,7 @@ DESC
           if key == '${time}'
             value = Time.at(time).strftime('%Y-%m-%d %H:%M:%S')
           else
-            if @max_lengths[i].nil? || record[key].nil?
+            if @table.nil? || @max_lengths[i].nil? || record[key].nil?
               value = record[key]
             else
               value = record[key].slice(0, @max_lengths[i])
