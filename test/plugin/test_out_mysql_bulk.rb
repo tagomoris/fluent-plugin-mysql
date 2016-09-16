@@ -1,13 +1,14 @@
 require 'helper'
 require 'mysql2-cs-bind'
+require 'fluent/test/driver/output'
 
 class MysqlBulkOutputTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
   end
 
-  def create_driver(conf = CONFIG, tag = 'test')
-    d = Fluent::Test::BufferedOutputTestDriver.new(Fluent::MysqlBulkOutput, tag).configure(conf)
+  def create_driver(conf = CONFIG)
+    d = Fluent::Test::Driver::Output.new(Fluent::Plugin::MysqlBulkOutput).configure(conf)
     d.instance.instance_eval {
       def client
         obj = Object.new

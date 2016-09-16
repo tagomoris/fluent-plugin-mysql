@@ -1,6 +1,8 @@
 # -*- encoding : utf-8 -*-
-module Fluent
-  class Fluent::MysqlBulkOutput < Fluent::BufferedOutput
+require 'fluent/plugin/output'
+
+module Fluent::Plugin
+  class MysqlBulkOutput < Output
     Fluent::Plugin.register_output('mysql_bulk', self)
 
     include Fluent::SetTimeKeyMixin
