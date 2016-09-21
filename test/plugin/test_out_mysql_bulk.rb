@@ -24,7 +24,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
 
   def test_configure_error
     assert_raise(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         host localhost
         database test_app_development
         username root
@@ -37,7 +37,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_raise(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         host localhost
         database test_app_development
         username root
@@ -50,7 +50,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_raise(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         host localhost
         username root
         password hogehoge
@@ -66,7 +66,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
   def test_configure
     # not define format(default csv)
     assert_nothing_raised(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         host localhost
         database test_app_development
         username root
@@ -80,7 +80,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_nothing_raised(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         database test_app_development
         username root
         password hogehoge
@@ -90,7 +90,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_nothing_raised(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         database test_app_development
         username root
         password hogehoge
@@ -102,7 +102,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_nothing_raised(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         database test_app_development
         username root
         password hogehoge
@@ -115,7 +115,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_nothing_raised(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         database test_app_development
         username root
         password hogehoge
