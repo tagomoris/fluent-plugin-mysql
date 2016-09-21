@@ -5,7 +5,7 @@ module Fluent::Plugin
   class MysqlBulkOutput < Output
     Fluent::Plugin.register_output('mysql_bulk', self)
 
-    include Fluent::SetTimeKeyMixin
+    helpers :compat_parameters, :inject
 
     config_param :host, :string, default: '127.0.0.1',
                  :desc => "Database host."
@@ -47,6 +47,7 @@ DESC
     end
 
     def configure(conf)
+      compat_parameters_convert(conf, :inject)
       super
 
       if @column_names.nil?
@@ -93,6 +94,7 @@ DESC
     end
 
     def format(tag, time, record)
+      record = inject_values_to_record(tag, time, record)
       [tag, time, format_proc.call(tag, time, record)].to_msgpack
     end
 
