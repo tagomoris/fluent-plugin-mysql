@@ -74,7 +74,7 @@ DESC
 
     def check_table_schema(database: @database, table: @table)
       result = client(database).xquery("SHOW COLUMNS FROM #{table}")
-      @max_lengths = []
+      max_lengths = []
       @column_names.each do |column|
         info = result.select { |x| x['Field'] == column }.first
         r = /(char|varchar)\(([\d]+)\)/
@@ -83,8 +83,9 @@ DESC
         rescue
           max_length = nil
         end
-        @max_lengths << max_length
+        max_lengths << max_length
       end
+      max_lengths
     end
 
     def shutdown
@@ -93,7 +94,7 @@ DESC
 
     def format(tag, time, record)
       record = inject_values_to_record(tag, time, record)
-      [tag, time, format_proc.call(tag, time, record)].to_msgpack
+      [tag, time, record].to_msgpack
     end
 
     def client(database)
@@ -109,12 +110,13 @@ DESC
 
     def write(chunk)
       database = extract_placeholders(@database, chunk.metadata)
-      table = extract_placeholders(@table, chunk.metadata)
-      check_table_schema(database: database, table: table)
+      table = extract_placeholders(@table, chunk.metadata).gsub('.', '_')
+      max_lengths = check_table_schema(database: database, table: table)
       @handler = client(database)
       values = []
       values_template = "(#{ @column_names.map { |key| '?' }.join(',') })"
       chunk.msgpack_each do |tag, time, data|
+        data = format_proc.call(tag, time, data, max_lengths)
         values << Mysql2::Client.pseudo_bind(values_template, data)
       end
       sql = "INSERT INTO #{table} (#{@column_names.join(',')}) VALUES #{values.join(',')}"
@@ -128,16 +130,16 @@ DESC
     private
 
     def format_proc
-      proc do |tag, time, record|
+      proc do |tag, time, record, max_lengths|
         values = []
         @key_names.each_with_index do |key, i|
           if key == '${time}'
             value = Time.at(time).strftime('%Y-%m-%d %H:%M:%S')
           else
-            if @max_lengths[i].nil? || record[key].nil?
+            if max_lengths[i].nil? || record[key].nil?
               value = record[key]
             else
-              value = record[key].slice(0, @max_lengths[i])
+              value = record[key].slice(0, max_lengths[i])
             end
 
             if @json_key_names && @json_key_names.include?(key)
