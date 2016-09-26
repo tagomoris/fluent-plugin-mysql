@@ -70,7 +70,6 @@ DESC
 
     def start
       super
-      check_table_schema
     end
 
     def check_table_schema(database: @database, table: @table)
