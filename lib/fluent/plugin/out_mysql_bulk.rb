@@ -70,7 +70,11 @@ DESC
 
     def start
       super
-      result = client.xquery("SHOW COLUMNS FROM #{@table}")
+      check_table_schema
+    end
+
+    def check_table_schema(database: @database, table: @table)
+      result = client(database).xquery("SHOW COLUMNS FROM #{table}")
       @max_lengths = []
       @column_names.each do |column|
         info = result.select { |x| x['Field'] == column }.first
