@@ -93,28 +93,30 @@ DESC
       [tag, time, format_proc.call(tag, time, record)].to_msgpack
     end
 
-    def client
+    def client(database)
       Mysql2::Client.new(
           host: @host,
           port: @port,
           username: @username,
           password: @password,
-          database: @database,
+          database: database,
           flags: Mysql2::Client::MULTI_STATEMENTS
         )
     end
 
     def write(chunk)
-      @handler = client
+      database = extract_placeholders(@database, chunk.metadata)
+      table = extract_placeholders(@table, chunk.metadata)
+      @handler = client(database)
       values = []
       values_template = "(#{ @column_names.map { |key| '?' }.join(',') })"
       chunk.msgpack_each do |tag, time, data|
         values << Mysql2::Client.pseudo_bind(values_template, data)
       end
-      sql = "INSERT INTO #{@table} (#{@column_names.join(',')}) VALUES #{values.join(',')}"
+      sql = "INSERT INTO #{table} (#{@column_names.join(',')}) VALUES #{values.join(',')}"
       sql += @on_duplicate_key_update_sql if @on_duplicate_key_update
 
-      log.info "bulk insert values size (table: #{@table}) => #{values.size}"
+      log.info "bulk insert values size (table: #{table}) => #{values.size}"
       @handler.xquery(sql)
       @handler.close
     end
