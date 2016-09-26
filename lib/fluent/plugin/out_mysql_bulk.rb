@@ -111,6 +111,7 @@ DESC
     def write(chunk)
       database = extract_placeholders(@database, chunk.metadata)
       table = extract_placeholders(@table, chunk.metadata)
+      check_table_schema(database: database, table: table)
       @handler = client(database)
       values = []
       values_template = "(#{ @column_names.map { |key| '?' }.join(',') })"
