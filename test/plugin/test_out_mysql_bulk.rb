@@ -45,15 +45,26 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
   end
 
   class TestExpandPlaceholders < self
-    def test_expand_table_tag_placeholder
+    data("table" => {"database" => "test_app_development",
+                     "table" => "users_${tag}",
+                     "extracted_database" => "test_app_development",
+                     "extracted_table" => "users_input_mysql"
+                    },
+         "database" => {"database" => "test_app_development_${tag}",
+                        "table" => "users",
+                        "extracted_database" => "test_app_development_input_mysql",
+                        "extracted_table" => "users"
+                       },
+        )
+    def test_expand_tag_placeholder(data)
       config = config_element('ROOT', '', {
                                 "@type" => "mysql_bulk",
                                 "host" => "localhost",
-                                "database" => "test_app_development",
+                                "database" => data["database"],
                                 "username" => "root",
                                 "password" => "hogehoge",
                                 "column_names" => "id,user_name,created_at",
-                                "table" => "users_${tag}",
+                                "table" => data["table"],
                               }, [config_element('buffer', 'tag', {
                                                    "@type" => "memory",
                                                    "flush_interval" => "60s",
@@ -62,44 +73,34 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
       time = Time.now
       metadata = create_metadata(timekey: time.to_i, tag: 'input.mysql')
       database, table = d.instance.expand_placeholders(metadata)
-      assert_equal("test_app_development", database)
-      assert_equal("users_input_mysql", table)
-    end
-
-    def test_expand_database_tag_placeholder
-      config = config_element('ROOT', '', {
-                                "@type" => "mysql_bulk",
-                                "host" => "localhost",
-                                "database" => "test_app_development_${tag}",
-                                "username" => "root",
-                                "password" => "hogehoge",
-                                "column_names" => "id,user_name,created_at",
-                                "table" => "users",
-                              }, [config_element('buffer', 'tag', {
-                                                   "@type" => "memory",
-                                                   "flush_interval" => "60s",
-                                                 }, [])])
-      d = create_driver(config)
-      time = Time.now
-      metadata = create_metadata(timekey: time.to_i, tag: 'input.mysql')
-      database, table = d.instance.expand_placeholders(metadata)
-      assert_equal("test_app_development_input_mysql", database)
-      assert_equal("users", table)
+      assert_equal(data["extracted_database"], database)
+      assert_equal(data["extracted_table"], table)
     end
 
     def setup
       Timecop.freeze(Time.parse("2016-09-26"))
     end
 
-    def test_expand_table_time_placeholder
+    data("table" => {"database" => "test_app_development",
+                     "table" => "users_%Y%m%d",
+                     "extracted_database" => "test_app_development",
+                     "extracted_table" => "users_20160926"
+                    },
+         "database" => {"database" => "test_app_development_%Y%m%d",
+                        "table" => "users",
+                        "extracted_database" => "test_app_development_20160926",
+                        "extracted_table" => "users"
+                       },
+        )
+    def test_expand_time_placeholder(data)
       config = config_element('ROOT', '', {
                                 "@type" => "mysql_bulk",
                                 "host" => "localhost",
-                                "database" => "test_app_development",
+                                "database" => data["database"],
                                 "username" => "root",
                                 "password" => "hogehoge",
                                 "column_names" => "id,user_name,created_at",
-                                "table" => "users_%Y%m%d",
+                                "table" => data["table"],
                               }, [config_element('buffer', 'time', {
                                                    "@type" => "memory",
                                                    "timekey" => "60s",
@@ -109,30 +110,8 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
       time = Time.now
       metadata = create_metadata(timekey: time.to_i, tag: 'input.mysql')
       database, table = d.instance.expand_placeholders(metadata)
-      assert_equal("test_app_development", database)
-      assert_equal("users_20160926", table)
-    end
-
-    def test_expand_database_time_placeholder
-      config = config_element('ROOT', '', {
-                                "@type" => "mysql_bulk",
-                                "host" => "localhost",
-                                "database" => "test_app_development_%Y%m%d",
-                                "username" => "root",
-                                "password" => "hogehoge",
-                                "column_names" => "id,user_name,created_at",
-                                "table" => "users",
-                              }, [config_element('buffer', 'time', {
-                                                   "@type" => "memory",
-                                                   "timekey" => "60s",
-                                                   "timekey_wait" => "60s"
-                                                 }, [])])
-      d = create_driver(config)
-      time = Time.now
-      metadata = create_metadata(timekey: time.to_i, tag: 'input.mysql')
-      database, table = d.instance.expand_placeholders(metadata)
-      assert_equal("test_app_development_20160926", database)
-      assert_equal("users", table)
+      assert_equal(data["extracted_database"], database)
+      assert_equal(data["extracted_table"], table)
     end
 
     def teardown
