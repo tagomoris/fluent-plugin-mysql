@@ -42,7 +42,7 @@ DESC
     end
 
     def configure(conf)
-      compat_parameters_convert(conf, :inject)
+      compat_parameters_convert(conf, :buffer, :inject)
       super
 
       if @column_names.nil?
