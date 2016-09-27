@@ -1,11 +1,29 @@
+# coding: utf-8
 require 'helper'
 require 'mysql2-cs-bind'
 require 'fluent/test/driver/output'
+require 'fluent/plugin/buffer'
+require 'fluent/config'
+require 'time'
+require 'timecop'
 
 class MysqlBulkOutputTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
   end
+
+  def config_element(name = 'test', argument = '', params = {}, elements = [])
+    Fluent::Config::Element.new(name, argument, params, elements)
+  end
+
+  CONFIG = %[
+    database test_app_development
+    username root
+    password hogehoge
+    column_names id,user_name,created_at
+    key_names id,users,created_at
+    table users
+  ]
 
   def create_driver(conf = CONFIG)
     d = Fluent::Test::Driver::Output.new(Fluent::Plugin::MysqlBulkOutput).configure(conf)
@@ -20,6 +38,106 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
       end
     }
     d
+  end
+
+  def create_metadata(timekey: nil, tag: nil, variables: nil)
+    Fluent::Plugin::Buffer::Metadata.new(timekey, tag, variables)
+  end
+
+  class TestExpandPlaceholders < self
+    def test_expand_table_tag_placeholder
+      config = config_element('ROOT', '', {
+                                "@type" => "mysql_bulk",
+                                "host" => "localhost",
+                                "database" => "test_app_development",
+                                "username" => "root",
+                                "password" => "hogehoge",
+                                "column_names" => "id,user_name,created_at",
+                                "table" => "users_${tag}",
+                              }, [config_element('buffer', 'tag', {
+                                                   "@type" => "memory",
+                                                   "flush_interval" => "60s",
+                                                 }, [])])
+      d = create_driver(config)
+      time = Time.now
+      metadata = create_metadata(timekey: time.to_i, tag: 'input.mysql')
+      database, table = d.instance.expand_placeholders(metadata)
+      assert_equal("test_app_development", database)
+      assert_equal("users_input_mysql", table)
+    end
+
+    def test_expand_database_tag_placeholder
+      config = config_element('ROOT', '', {
+                                "@type" => "mysql_bulk",
+                                "host" => "localhost",
+                                "database" => "test_app_development_${tag}",
+                                "username" => "root",
+                                "password" => "hogehoge",
+                                "column_names" => "id,user_name,created_at",
+                                "table" => "users",
+                              }, [config_element('buffer', 'tag', {
+                                                   "@type" => "memory",
+                                                   "flush_interval" => "60s",
+                                                 }, [])])
+      d = create_driver(config)
+      time = Time.now
+      metadata = create_metadata(timekey: time.to_i, tag: 'input.mysql')
+      database, table = d.instance.expand_placeholders(metadata)
+      assert_equal("test_app_development_input_mysql", database)
+      assert_equal("users", table)
+    end
+
+    def setup
+      Timecop.freeze(Time.parse("2016-09-26"))
+    end
+
+    def test_expand_table_time_placeholder
+      config = config_element('ROOT', '', {
+                                "@type" => "mysql_bulk",
+                                "host" => "localhost",
+                                "database" => "test_app_development",
+                                "username" => "root",
+                                "password" => "hogehoge",
+                                "column_names" => "id,user_name,created_at",
+                                "table" => "users_%Y%m%d",
+                              }, [config_element('buffer', 'time', {
+                                                   "@type" => "memory",
+                                                   "timekey" => "60s",
+                                                   "timekey_wait" => "60s"
+                                                 }, [])])
+      d = create_driver(config)
+      time = Time.now
+      metadata = create_metadata(timekey: time.to_i, tag: 'input.mysql')
+      database, table = d.instance.expand_placeholders(metadata)
+      assert_equal("test_app_development", database)
+      assert_equal("users_20160926", table)
+    end
+
+    def test_expand_database_time_placeholder
+      config = config_element('ROOT', '', {
+                                "@type" => "mysql_bulk",
+                                "host" => "localhost",
+                                "database" => "test_app_development_%Y%m%d",
+                                "username" => "root",
+                                "password" => "hogehoge",
+                                "column_names" => "id,user_name,created_at",
+                                "table" => "users",
+                              }, [config_element('buffer', 'time', {
+                                                   "@type" => "memory",
+                                                   "timekey" => "60s",
+                                                   "timekey_wait" => "60s"
+                                                 }, [])])
+      d = create_driver(config)
+      time = Time.now
+      metadata = create_metadata(timekey: time.to_i, tag: 'input.mysql')
+      database, table = d.instance.expand_placeholders(metadata)
+      assert_equal("test_app_development_20160926", database)
+      assert_equal("users", table)
+    end
+
+    def teardown
+      Timecop.return
+    end
   end
 
   def test_configure_error
