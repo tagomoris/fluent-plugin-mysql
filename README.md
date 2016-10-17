@@ -21,6 +21,8 @@ column_names|bulk insert column (require)
 key_names|value key names, ${time} is placeholder Time.at(time).strftime("%Y-%m-%d %H:%M:%S") (default : column_names)
 json_key_names|Key names which store data as json, comma separator.
 table|bulk insert table (require)
+sslca|filename with extension for ca bundle certificate (optional, for encrypted client connection)
+sslcapath|full path to location where ssl ca buncle is stored (optional, for encrypted client connection)
 on_duplicate_key_update|on duplicate key update enable (true:false)
 on_duplicate_update_keys|on duplicate key update column, comma separator
 
@@ -36,6 +38,8 @@ on_duplicate_update_keys|on duplicate key update column, comma separator
   column_names id,user_name,created_at,updated_at
   table users
   flush_interval 10s
+  sslca ca-bundle.crt
+  sslcapath /etc/pki/certs/
 </match>
 ```
 
