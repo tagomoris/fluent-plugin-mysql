@@ -232,6 +232,8 @@ then `created_at` column is set from time attribute in a fluentd packet with tim
 
 ## Configuration Example(bulk insert with tag placeholder for table name)
 
+This description is for v0.14.X users.
+
 ```
 <match mysql.input>
   @type mysql_bulk
@@ -272,6 +274,8 @@ mysql> select * from users_mysql_input;
 ```
 
 ## Configuration Example(bulk insert with time format placeholder for table name)
+
+This description is for v0.14.X users.
 
 ```
 <match mysql.input>
