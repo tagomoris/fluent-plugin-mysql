@@ -1,36 +1,38 @@
 # -*- encoding : utf-8 -*-
-module Fluent
-  class Fluent::MysqlBulkOutput < Fluent::BufferedOutput
+require 'fluent/plugin/output'
+
+module Fluent::Plugin
+  class MysqlBulkOutput < Output
     Fluent::Plugin.register_output('mysql_bulk', self)
 
-    include Fluent::SetTimeKeyMixin
+    helpers :compat_parameters, :inject
 
     config_param :host, :string, default: '127.0.0.1',
-                 :desc => "Database host."
+                 desc: "Database host."
     config_param :port, :integer, default: 3306,
-                 :desc => "Database port."
+                 desc: "Database port."
     config_param :database, :string,
-                 :desc => "Database name."
+                 desc: "Database name."
     config_param :username, :string,
-                 :desc => "Database user."
+                 desc: "Database user."
     config_param :password, :string, default: '', secret: true,
-                 :desc => "Database password."
+                 desc: "Database password."
 
     config_param :column_names, :string,
-                 :desc => "Bulk insert column."
+                 desc: "Bulk insert column."
     config_param :key_names, :string, default: nil,
-                 :desc => <<-DESC
+                 desc: <<-DESC
 Value key names, ${time} is placeholder Time.at(time).strftime("%Y-%m-%d %H:%M:%S").
 DESC
     config_param :json_key_names, :string, default: nil,
-                  :desc => "Key names which store data as json"
+                  desc: "Key names which store data as json"
     config_param :table, :string,
-                 :desc => "Bulk insert table."
+                 desc: "Bulk insert table."
 
     config_param :on_duplicate_key_update, :bool, default: false,
-                 :desc => "On duplicate key update enable."
+                 desc: "On duplicate key update enable."
     config_param :on_duplicate_update_keys, :string, default: nil,
-                 :desc => "On duplicate key update column, comma separator."
+                 desc: "On duplicate key update column, comma separator."
 
     attr_accessor :handler
 
@@ -39,12 +41,8 @@ DESC
       require 'mysql2-cs-bind'
     end
 
-    # Define `log` method for v0.10.42 or earlier
-    unless method_defined?(:log)
-      define_method("log") { $log }
-    end
-
     def configure(conf)
+      compat_parameters_convert(conf, :buffer, :inject)
       super
 
       if @column_names.nil?
@@ -72,8 +70,11 @@ DESC
 
     def start
       super
-      result = client.xquery("SHOW COLUMNS FROM #{@table}")
-      @max_lengths = []
+    end
+
+    def check_table_schema(database: @database, table: @table)
+      result = client(database).xquery("SHOW COLUMNS FROM #{table}")
+      max_lengths = []
       @column_names.each do |column|
         info = result.select { |x| x['Field'] == column }.first
         r = /(char|varchar)\(([\d]+)\)/
@@ -82,8 +83,9 @@ DESC
         rescue
           max_length = nil
         end
-        @max_lengths << max_length
+        max_lengths << max_length
       end
+      max_lengths
     end
 
     def shutdown
@@ -91,31 +93,45 @@ DESC
     end
 
     def format(tag, time, record)
-      [tag, time, format_proc.call(tag, time, record)].to_msgpack
+      record = inject_values_to_record(tag, time, record)
+      [tag, time, record].to_msgpack
     end
 
-    def client
+    def formatted_to_msgpack_binary
+      true
+    end
+
+    def client(database)
       Mysql2::Client.new(
           host: @host,
           port: @port,
           username: @username,
           password: @password,
-          database: @database,
+          database: database,
           flags: Mysql2::Client::MULTI_STATEMENTS
         )
     end
 
+    def expand_placeholders(metadata)
+      database = extract_placeholders(@database, metadata).gsub('.', '_')
+      table = extract_placeholders(@table, metadata).gsub('.', '_')
+      return database, table
+    end
+
     def write(chunk)
-      @handler = client
+      database, table = expand_placeholders(chunk.metadata)
+      max_lengths = check_table_schema(database: database, table: table)
+      @handler = client(database)
       values = []
       values_template = "(#{ @column_names.map { |key| '?' }.join(',') })"
       chunk.msgpack_each do |tag, time, data|
+        data = format_proc.call(tag, time, data, max_lengths)
         values << Mysql2::Client.pseudo_bind(values_template, data)
       end
-      sql = "INSERT INTO #{@table} (#{@column_names.join(',')}) VALUES #{values.join(',')}"
+      sql = "INSERT INTO #{table} (#{@column_names.join(',')}) VALUES #{values.join(',')}"
       sql += @on_duplicate_key_update_sql if @on_duplicate_key_update
 
-      log.info "bulk insert values size (table: #{@table}) => #{values.size}"
+      log.info "bulk insert values size (table: #{table}) => #{values.size}"
       @handler.xquery(sql)
       @handler.close
     end
@@ -123,16 +139,16 @@ DESC
     private
 
     def format_proc
-      proc do |tag, time, record|
+      proc do |tag, time, record, max_lengths|
         values = []
         @key_names.each_with_index do |key, i|
           if key == '${time}'
             value = Time.at(time).strftime('%Y-%m-%d %H:%M:%S')
           else
-            if @max_lengths[i].nil? || record[key].nil?
+            if max_lengths[i].nil? || record[key].nil?
               value = record[key]
             else
-              value = record[key].slice(0, @max_lengths[i])
+              value = record[key].slice(0, max_lengths[i])
             end
 
             if @json_key_names && @json_key_names.include?(key)

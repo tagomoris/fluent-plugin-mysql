@@ -8,6 +8,8 @@ fluent-plugin-mysql-bulk merged this repository.
 
 [mysql plugin](README_mysql.md) is deprecated. You should use mysql_bulk.
 
+v0.1.5 only supports fluentd-0.12.X and v0.2.0 only supports fluentd-0.14.X.
+
 ## Parameters
 
 param|value
@@ -228,6 +230,92 @@ then `created_at` column is set from time attribute in a fluentd packet with tim
 +-----+-----------+---------------------+
 ```
 
+## Configuration Example(bulk insert with tag placeholder for table name)
+
+This description is for v0.14.X users.
+
+```
+<match mysql.input>
+  @type mysql_bulk
+  host localhost
+  database test_app_development
+  username root
+  password hogehoge
+  column_names id,user_name,created_at
+  key_names id,user,${time}
+  table users_${tag}
+  <buffer tag>
+    @type memory
+    flush_interval 60s
+  </buffer>
+</match>
+```
+
+Assume following input is coming:
+
+```js
+2016-09-26 18:42:13+09:00: mysql.input: {"user":"toyama","dummy":"hogehoge"}
+2016-09-26 18:42:16+09:00: mysql.input: {"user":"toyama2","dummy":"hogehoge"}
+2016-09-26 18:42:19+09:00: mysql.input: {"user":"toyama3","dummy":"hogehoge"}
+```
+
+then `created_at` column is set from time attribute in a fluentd packet:
+
+```sql
+mysql> select * from users_mysql_input;
++----+-----------+---------------------+
+| id | user_name | created_at          |
++----+-----------+---------------------+
+|  1 | toyama    | 2016-09-26 18:42:13 |
+|  2 | toyama2   | 2016-09-26 18:42:16 |
+|  3 | toyama3   | 2016-09-26 18:42:19 |
++----+-----------+---------------------+
+3 rows in set (0.00 sec)
+```
+
+## Configuration Example(bulk insert with time format placeholder for table name)
+
+This description is for v0.14.X users.
+
+```
+<match mysql.input>
+  @type mysql_bulk
+  host localhost
+  database test_app_development
+  username root
+  password hogehoge
+  column_names id,user_name,created_at
+  key_names id,user,${time}
+  table users_%Y%m%d
+  <buffer time>
+    @type memory
+    timekey 60s
+    timekey_wait 60s
+  </buffer>
+</match>
+```
+
+Assume following input is coming:
+
+```js
+2016-09-26 18:37:06+09:00: mysql.input: {"user":"toyama","dummy":"hogehoge"}
+2016-09-26 18:37:08+09:00: mysql.input: {"user":"toyama2","dummy":"hogehoge"}
+2016-09-26 18:37:11+09:00: mysql.input: {"user":"toyama3","dummy":"hogehoge"}
+```
+
+then `created_at` column is set from time attribute in a fluentd packet:
+
+```sql
+mysql> select * from users_20160926;
++----+-----------+---------------------+
+| id | user_name | created_at          |
++----+-----------+---------------------+
+|  1 | toyama    | 2016-09-26 18:37:06 |
+|  2 | toyama2   | 2016-09-26 18:37:08 |
+|  3 | toyama3   | 2016-09-26 18:37:11 |
++----+-----------+---------------------+
+3 rows in set (0.00 sec)
+```
 
 ## spec
 

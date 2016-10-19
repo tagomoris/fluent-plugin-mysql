@@ -1,13 +1,32 @@
+# coding: utf-8
 require 'helper'
 require 'mysql2-cs-bind'
+require 'fluent/test/driver/output'
+require 'fluent/plugin/buffer'
+require 'fluent/config'
+require 'time'
+require 'timecop'
 
 class MysqlBulkOutputTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
   end
 
-  def create_driver(conf = CONFIG, tag = 'test')
-    d = Fluent::Test::BufferedOutputTestDriver.new(Fluent::MysqlBulkOutput, tag).configure(conf)
+  def config_element(name = 'test', argument = '', params = {}, elements = [])
+    Fluent::Config::Element.new(name, argument, params, elements)
+  end
+
+  CONFIG = %[
+    database test_app_development
+    username root
+    password hogehoge
+    column_names id,user_name,created_at
+    key_names id,users,created_at
+    table users
+  ]
+
+  def create_driver(conf = CONFIG)
+    d = Fluent::Test::Driver::Output.new(Fluent::Plugin::MysqlBulkOutput).configure(conf)
     d.instance.instance_eval {
       def client
         obj = Object.new
@@ -21,9 +40,88 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     d
   end
 
+  def create_metadata(timekey: nil, tag: nil, variables: nil)
+    Fluent::Plugin::Buffer::Metadata.new(timekey, tag, variables)
+  end
+
+  class TestExpandPlaceholders < self
+    data("table" => {"database" => "test_app_development",
+                     "table" => "users_${tag}",
+                     "extracted_database" => "test_app_development",
+                     "extracted_table" => "users_input_mysql"
+                    },
+         "database" => {"database" => "test_app_development_${tag}",
+                        "table" => "users",
+                        "extracted_database" => "test_app_development_input_mysql",
+                        "extracted_table" => "users"
+                       },
+        )
+    def test_expand_tag_placeholder(data)
+      config = config_element('ROOT', '', {
+                                "@type" => "mysql_bulk",
+                                "host" => "localhost",
+                                "database" => data["database"],
+                                "username" => "root",
+                                "password" => "hogehoge",
+                                "column_names" => "id,user_name,created_at",
+                                "table" => data["table"],
+                              }, [config_element('buffer', 'tag', {
+                                                   "@type" => "memory",
+                                                   "flush_interval" => "60s",
+                                                 }, [])])
+      d = create_driver(config)
+      time = Time.now
+      metadata = create_metadata(timekey: time.to_i, tag: 'input.mysql')
+      database, table = d.instance.expand_placeholders(metadata)
+      assert_equal(data["extracted_database"], database)
+      assert_equal(data["extracted_table"], table)
+    end
+
+    def setup
+      Timecop.freeze(Time.parse("2016-09-26"))
+    end
+
+    data("table" => {"database" => "test_app_development",
+                     "table" => "users_%Y%m%d",
+                     "extracted_database" => "test_app_development",
+                     "extracted_table" => "users_20160926"
+                    },
+         "database" => {"database" => "test_app_development_%Y%m%d",
+                        "table" => "users",
+                        "extracted_database" => "test_app_development_20160926",
+                        "extracted_table" => "users"
+                       },
+        )
+    def test_expand_time_placeholder(data)
+      config = config_element('ROOT', '', {
+                                "@type" => "mysql_bulk",
+                                "host" => "localhost",
+                                "database" => data["database"],
+                                "username" => "root",
+                                "password" => "hogehoge",
+                                "column_names" => "id,user_name,created_at",
+                                "table" => data["table"],
+                              }, [config_element('buffer', 'time', {
+                                                   "@type" => "memory",
+                                                   "timekey" => "60s",
+                                                   "timekey_wait" => "60s"
+                                                 }, [])])
+      d = create_driver(config)
+      time = Time.now
+      metadata = create_metadata(timekey: time.to_i, tag: 'input.mysql')
+      database, table = d.instance.expand_placeholders(metadata)
+      assert_equal(data["extracted_database"], database)
+      assert_equal(data["extracted_table"], table)
+    end
+
+    def teardown
+      Timecop.return
+    end
+  end
+
   def test_configure_error
     assert_raise(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         host localhost
         database test_app_development
         username root
@@ -36,7 +134,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_raise(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         host localhost
         database test_app_development
         username root
@@ -49,7 +147,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_raise(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         host localhost
         username root
         password hogehoge
@@ -65,7 +163,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
   def test_configure
     # not define format(default csv)
     assert_nothing_raised(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         host localhost
         database test_app_development
         username root
@@ -79,7 +177,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_nothing_raised(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         database test_app_development
         username root
         password hogehoge
@@ -89,7 +187,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_nothing_raised(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         database test_app_development
         username root
         password hogehoge
@@ -101,7 +199,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_nothing_raised(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         database test_app_development
         username root
         password hogehoge
@@ -114,7 +212,7 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     end
 
     assert_nothing_raised(Fluent::ConfigError) do
-      d = create_driver %[
+      create_driver %[
         database test_app_development
         username root
         password hogehoge

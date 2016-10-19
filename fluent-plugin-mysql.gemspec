@@ -14,9 +14,10 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_runtime_dependency "fluentd", '~> 0.12.0'
+  gem.add_runtime_dependency "fluentd", ['>= 0.14.8', '< 2']
   gem.add_runtime_dependency "mysql2-cs-bind"
   gem.add_runtime_dependency "jsonpath"
   gem.add_development_dependency "rake"
   gem.add_development_dependency "test-unit"
+  gem.add_development_dependency "timecop", "~> 0.8.0"
 end
