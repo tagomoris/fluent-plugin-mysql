@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 Gem::Specification.new do |gem|
   gem.name          = "fluent-plugin-mysql"
-  gem.version       = "0.1.4"
+  gem.version       = "0.1.5"
   gem.authors       = ["TAGOMORI Satoshi", "Toyama Hiroshi"]
   gem.email         = ["tagomoris@gmail.com", "toyama0919@gmail.com"]
   gem.description   = %q{fluent plugin to insert mysql as json(single column) or insert statement}
@@ -14,7 +14,7 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_runtime_dependency "fluentd"
+  gem.add_runtime_dependency "fluentd", '~> 0.12.0'
   gem.add_runtime_dependency "mysql2-cs-bind"
   gem.add_runtime_dependency "jsonpath"
   gem.add_development_dependency "rake"
