@@ -8,6 +8,8 @@ fluent-plugin-mysql-bulk merged this repository.
 
 [mysql plugin](README_mysql.md) is deprecated. You should use mysql_bulk.
 
+v0.1.5 only supports fluentd-0.12.X and v0.2.0 only supports fluentd-0.14.X.
+
 ## Parameters
 
 param|value
