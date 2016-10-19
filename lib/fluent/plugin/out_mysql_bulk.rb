@@ -97,6 +97,10 @@ DESC
       [tag, time, record].to_msgpack
     end
 
+    def formatted_to_msgpack_binary
+      true
+    end
+
     def client(database)
       Mysql2::Client.new(
           host: @host,
