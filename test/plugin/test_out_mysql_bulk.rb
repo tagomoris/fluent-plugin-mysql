@@ -158,6 +158,20 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
         flush_interval 10s
       ]
     end
+
+    assert_raise(Fluent::ConfigError) do
+      create_driver %[
+        host localhost
+        username root
+        password hogehoge
+        column_names id,user_name,login_count,created_at,updated_at
+        table users
+        on_duplicate_key_update true
+        on_duplicate_update_keys login_count,updated_at
+        on_duplicate_update_custom_values login_count
+        flush_interval 10s
+      ]
+    end
   end
 
   def test_configure
@@ -222,6 +236,20 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
         table access
       ]
     end
+
+    assert_nothing_raised(Fluent::ConfigError) do
+      create_driver %[
+        database test_app_development
+        username root
+        password hogehoge
+        column_names id,user_name,login_count,created_at,updated_at
+        key_names id,user_name,login_count,created_date,updated_date
+        table users
+        on_duplicate_key_update true
+        on_duplicate_update_keys login_count,updated_at
+        on_duplicate_update_custom_values ${`login_count` + 1},updated_at
+      ]
+    end
   end
 
   def test_variables
@@ -281,6 +309,22 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     assert_equal ['id','url','request_headers_json','params_json','created_date','updated_date'], d.instance.column_names
     assert_equal ['request_headers','params'], d.instance.json_key_names
     assert_nil d.instance.instance_variable_get(:@on_duplicate_key_update_sql)
+
+    d = create_driver %[
+      database test_app_development
+      username root
+      password hogehoge
+      column_names id,user_name,login_count,created_at,updated_at
+      table users
+      on_duplicate_key_update true
+      on_duplicate_update_keys login_count,updated_at
+      on_duplicate_update_custom_values ${`login_count` + 1},updated_at
+    ]
+
+    assert_equal ['id','user_name','login_count','created_at','updated_at'], d.instance.key_names
+    assert_equal ['id','user_name','login_count','created_at','updated_at'], d.instance.column_names
+    assert_equal nil, d.instance.json_key_names
+    assert_equal " ON DUPLICATE KEY UPDATE login_count = `login_count` + 1,updated_at = VALUES(updated_at)", d.instance.instance_variable_get(:@on_duplicate_key_update_sql)
   end
 
   def test_spaces_in_columns
