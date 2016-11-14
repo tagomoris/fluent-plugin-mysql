@@ -33,6 +33,8 @@ DESC
                  desc: "On duplicate key update enable."
     config_param :on_duplicate_update_keys, :string, default: nil,
                  desc: "On duplicate key update column, comma separator."
+    config_param :on_duplicate_update_custom_values, :string, default: nil,
+                 desc: "On_duplicate_update_custom_values, comma separator. specify the column name is insert value, custom value is use ${sql conditions}"
 
     attr_accessor :handler
 
@@ -55,10 +57,25 @@ DESC
         end
         @on_duplicate_update_keys = @on_duplicate_update_keys.split(',')
 
+        if !@on_duplicate_update_custom_values.nil?
+          @on_duplicate_update_custom_values = @on_duplicate_update_custom_values.split(',')
+          if @on_duplicate_update_custom_values.length != @on_duplicate_update_keys.length
+            fail Fluent::ConfigError, <<-DESC
+on_duplicate_update_keys and on_duplicate_update_custom_values must be the same length
+DESC
+          end
+        end
+
         @on_duplicate_key_update_sql = ' ON DUPLICATE KEY UPDATE '
         updates = []
-        @on_duplicate_update_keys.each do |update_column|
-          updates << "#{update_column} = VALUES(#{update_column})"
+        @on_duplicate_update_keys.each_with_index do |update_column, i|
+          if @on_duplicate_update_custom_values.nil? || @on_duplicate_update_custom_values[i] == "#{update_column}"
+            updates << "#{update_column} = VALUES(#{update_column})"
+          else
+            value = @on_duplicate_update_custom_values[i].to_s.match(/\${(.*)}/)[1]
+            escape_value = Mysql2::Client.escape(value)
+            updates << "#{update_column} = #{escape_value}"
+          end
         end
         @on_duplicate_key_update_sql += updates.join(',')
       end
