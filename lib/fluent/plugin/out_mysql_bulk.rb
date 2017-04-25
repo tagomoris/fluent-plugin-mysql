@@ -1,4 +1,3 @@
-# -*- encoding : utf-8 -*-
 require 'fluent/plugin/output'
 
 module Fluent::Plugin
