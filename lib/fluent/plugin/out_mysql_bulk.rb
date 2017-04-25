@@ -1,4 +1,3 @@
-# -*- encoding : utf-8 -*-
 require 'fluent/plugin/output'
 
 module Fluent::Plugin
@@ -85,10 +84,6 @@ DESC
       @json_key_names = @json_key_names.split(',') if @json_key_names
     end
 
-    def start
-      super
-    end
-
     def check_table_schema(database: @database, table: @table)
       result = client(database).xquery("SHOW COLUMNS FROM #{table}")
       max_lengths = []
@@ -103,10 +98,6 @@ DESC
         max_lengths << max_length
       end
       max_lengths
-    end
-
-    def shutdown
-      super
     end
 
     def format(tag, time, record)
