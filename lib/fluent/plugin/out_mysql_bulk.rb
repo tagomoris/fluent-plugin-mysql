@@ -145,7 +145,7 @@ DESC
         data = format_proc.call(tag, time, data, max_lengths)
         values << Mysql2::Client.pseudo_bind(values_template, data)
       end
-      sql = "INSERT INTO #{table} (#{@column_names.join(',')}) VALUES #{values.join(',')}"
+      sql = "INSERT INTO `#{table}` (#{@column_names.map { |colname| "`#{colname}`" }.join(',')}) VALUES #{values.join(',')}"
       sql += @on_duplicate_key_update_sql if @on_duplicate_key_update
 
       log.info "bulk insert values size (table: #{table}) => #{values.size}"
