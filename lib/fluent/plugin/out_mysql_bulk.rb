@@ -165,7 +165,7 @@ DESC
             if max_lengths[i].nil? || record[key].nil?
               value = record[key]
             else
-              value = record[key].slice(0, max_lengths[i])
+              value = record[key].to_s.slice(0, max_lengths[i])
             end
 
             if @json_key_names && @json_key_names.include?(key)
