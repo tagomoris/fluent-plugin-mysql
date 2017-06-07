@@ -28,6 +28,9 @@ DESC
     config_param :table, :string,
                  desc: "Bulk insert table."
 
+    config_param :unixtimestamp_key_names, :string, default: nil,
+                 desc: "Key names which store data as datetime from unix time stamp"
+
     config_param :on_duplicate_key_update, :bool, default: false,
                  desc: "On duplicate key update enable."
     config_param :on_duplicate_update_keys, :string, default: nil,
@@ -82,6 +85,7 @@ DESC
       @column_names = @column_names.split(',').collect(&:strip)
       @key_names = @key_names.nil? ? @column_names : @key_names.split(',').collect(&:strip)
       @json_key_names = @json_key_names.split(',') if @json_key_names
+      @unixtimestamp_key_names = @unixtimestamp_key_names.split(',') if @unixtimestamp_key_names
     end
 
     def check_table_schema(database: @database, table: @table)
@@ -161,6 +165,10 @@ DESC
 
             if @json_key_names && @json_key_names.include?(key)
               value = value.to_json
+            end
+
+            if @unixtimestamp_key_names && @unixtimestamp_key_names.include?(key)
+              value = Time.at(value).strftime('%Y-%m-%d %H:%M:%S')
             end
           end
           values << value
