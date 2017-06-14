@@ -9,6 +9,11 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   config_param :database, :string
   config_param :username, :string
   config_param :password, :string, :default => '', :secret => true
+  config_param :sslkey, :string, default: nil
+  config_param :sslcert, :string, default: nil
+  config_param :sslca, :string, default: nil
+  config_param :sslcapath, :string, default: nil
+  config_param :sslcacipher, :string, default: nil
 
   config_param :key_names, :string, :default => nil # nil allowed for json format
   config_param :sql, :string, :default => nil
@@ -99,7 +104,13 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
     Mysql2::Client.new({
         :host => @host, :port => @port,
         :username => @username, :password => @password,
-        :database => @database, :flags => Mysql2::Client::MULTI_STATEMENTS,
+        :database => @database,
+        :sslkey => @sslkey,
+        :sslcert => @sslcert,
+        :sslca => @sslca,
+        :sslcapath => @sslcapath,
+        :sslcipher => @sslcipher,
+        :flags => Mysql2::Client::MULTI_STATEMENTS,
       })
   end
 
