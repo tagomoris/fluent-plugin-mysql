@@ -26,6 +26,8 @@ module Fluent::Plugin
                      desc: "SSL CA path."
     config_param :sslcipher, :string, default: nil,
                          desc: "SSL cipher."
+    config_param :sslverify, :bool, default: nil,
+                             desc: "SSL Verify Server Certificate."
 
     config_param :column_names, :string,
                  desc: "Bulk insert column."
@@ -131,6 +133,7 @@ DESC
           sslca: @sslca,
           sslcapath: @sslcapath,
           sslcipher: @sslcipher,
+          sslverify: @sslverify,
           flags: Mysql2::Client::MULTI_STATEMENTS
         )
     end

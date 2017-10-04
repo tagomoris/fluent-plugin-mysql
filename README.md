@@ -24,6 +24,7 @@ sslcert|path to client cert(default: nil)
 sslca|path to ca cert(default: nil)
 sslcapath|path to ca certs(default: nil)
 sslcipher|ssl cipher(default: nil)
+sslverify|verify server certificate(default: nil)
 column_names|bulk insert column (require)
 key_names|value key names, ${time} is placeholder Time.at(time).strftime("%Y-%m-%d %H:%M:%S") (default : column_names)
 json_key_names|Key names which store data as json, comma separator.
