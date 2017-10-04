@@ -16,6 +16,18 @@ module Fluent::Plugin
                  desc: "Database user."
     config_param :password, :string, default: '', secret: true,
                  desc: "Database password."
+    config_param :sslkey, :string, default: nil,
+                 desc: "SSL key."
+    config_param :sslcert, :string, default: nil,
+                 desc: "SSL cert."
+    config_param :sslca, :string, default: nil,
+                 desc: "SSL CA."
+    config_param :sslcapath, :string, default: nil,
+                     desc: "SSL CA path."
+    config_param :sslcipher, :string, default: nil,
+                         desc: "SSL cipher."
+    config_param :sslverify, :bool, default: nil,
+                             desc: "SSL Verify Server Certificate."
 
     config_param :column_names, :string,
                  desc: "Bulk insert column."
@@ -124,6 +136,12 @@ DESC
           username: @username,
           password: @password,
           database: database,
+          sslkey: @sslkey,
+          sslcert: @sslcert,
+          sslca: @sslca,
+          sslcapath: @sslcapath,
+          sslcipher: @sslcipher,
+          sslverify: @sslverify,
           flags: Mysql2::Client::MULTI_STATEMENTS
         )
     end
