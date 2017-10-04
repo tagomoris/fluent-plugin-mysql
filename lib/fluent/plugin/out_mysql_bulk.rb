@@ -109,6 +109,10 @@ DESC
       true
     end
 
+    def multi_workers_ready?
+      true
+    end
+
     def client(database)
       Mysql2::Client.new(
           host: @host,
