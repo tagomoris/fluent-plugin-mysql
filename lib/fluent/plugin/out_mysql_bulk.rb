@@ -49,8 +49,6 @@ DESC
                  desc: "On duplicate key update column, comma separator."
     config_param :on_duplicate_update_custom_values, :string, default: nil,
                  desc: "On_duplicate_update_custom_values, comma separator. specify the column name is insert value, custom value is use ${sql conditions}"
-    config_param :timeout, :integer, default: 5,
-                 desc: "timeout value (sec)"
 
     attr_accessor :handler
 
@@ -144,9 +142,6 @@ DESC
           sslcapath: @sslcapath,
           sslcipher: @sslcipher,
           sslverify: @sslverify,
-          read_timeout: @timeout,
-          write_timeout: @timeout,
-          connect_timeout: @timeout,
           flags: Mysql2::Client::MULTI_STATEMENTS
         )
     end
