@@ -25,6 +25,8 @@ sslca|path to ca cert(default: nil)
 sslcapath|path to ca certs(default: nil)
 sslcipher|ssl cipher(default: nil)
 sslverify|verify server certificate(default: nil)
+encoding|encoding(default: nil)
+collation|collation(default: nil)
 column_names|bulk insert column (require)
 key_names|value key names, ${time} is placeholder Time.at(time).strftime("%Y-%m-%d %H:%M:%S") (default : column_names)
 json_key_names|Key names which store data as json, comma separator.
@@ -41,6 +43,8 @@ on_duplicate_update_keys|on duplicate key update column, comma separator
   database test_app_development
   username root
   password hogehoge
+  encoding utf8mb4
+  collation utf8mb4_unicode_ci
   column_names id,user_name,created_at,updated_at
   table users
   flush_interval 10s
