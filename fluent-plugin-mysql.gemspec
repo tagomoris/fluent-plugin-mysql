@@ -17,6 +17,7 @@ Gem::Specification.new do |gem|
   gem.add_runtime_dependency "fluentd", ['>= 0.14.8', '< 2']
   gem.add_runtime_dependency "mysql2-cs-bind"
   gem.add_runtime_dependency "jsonpath"
+  gem.add_runtime_dependency "oj"
   gem.add_development_dependency "rake"
   gem.add_development_dependency "test-unit"
   gem.add_development_dependency "timecop", "~> 0.8.0"
