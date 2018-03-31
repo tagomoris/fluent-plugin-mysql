@@ -101,7 +101,8 @@ DESC
     end
 
     def check_table_schema(database: @database, table: @table)
-      result = client(database).xquery("SHOW COLUMNS FROM #{table}")
+      _client = client(database)
+      result = _client.xquery("SHOW COLUMNS FROM #{table}")
       max_lengths = []
       @column_names.each do |column|
         info = result.select { |x| x['Field'] == column }.first
@@ -114,6 +115,8 @@ DESC
         max_lengths << max_length
       end
       max_lengths
+    ensure
+      _client.close
     end
 
     def format(tag, time, record)
