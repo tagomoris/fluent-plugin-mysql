@@ -32,6 +32,7 @@ unixtimestamp_key_names|Key names which store data as datetime from unix time st
 table|bulk insert table (require)
 on_duplicate_key_update|on duplicate key update enable (true:false)
 on_duplicate_update_keys|on duplicate key update column, comma separator
+transaction_isolation_level|set transaction isolation level(default: nil)
 
 ## Configuration Example(bulk insert)
 
