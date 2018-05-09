@@ -51,7 +51,7 @@ DESC
     config_param :on_duplicate_update_custom_values, :string, default: nil,
                  desc: "On_duplicate_update_custom_values, comma separator. specify the column name is insert value, custom value is use ${sql conditions}"
 
-    config_param :transaction_isolation_level, :enum, list: [:read_uncommitted, :read_committed, :repeatable_read, :serializable], default: :repeatable_read,
+    config_param :transaction_isolation_level, :enum, list: [:read_uncommitted, :read_committed, :repeatable_read, :serializable], default: :nil,
                  desc: "Set transaction isolation level."
 
     attr_accessor :handler
@@ -173,7 +173,7 @@ DESC
       sql += @on_duplicate_key_update_sql if @on_duplicate_key_update
 
       log.info "bulk insert values size (table: #{table}) => #{values.size}"
-      @handler.query("SET SESSION TRANSACTION ISOLATION LEVEL #{transaction_isolation_level}")
+      @handler.query("SET SESSION TRANSACTION ISOLATION LEVEL #{transaction_isolation_level}") if @transaction_isolation_level
       @handler.xquery(sql)
       @handler.close
     end
