@@ -51,7 +51,7 @@ DESC
     config_param :on_duplicate_update_custom_values, :string, default: nil,
                  desc: "On_duplicate_update_custom_values, comma separator. specify the column name is insert value, custom value is use ${sql conditions}"
 
-    config_param :transaction_isolation_level, :enum, list: [:read_uncommitted, :read_committed, :repeatable_read, :serializable], default: :nil,
+    config_param :transaction_isolation_level, :enum, list: [:read_uncommitted, :read_committed, :repeatable_read, :serializable], default: nil,
                  desc: "Set transaction isolation level."
 
     attr_accessor :handler
