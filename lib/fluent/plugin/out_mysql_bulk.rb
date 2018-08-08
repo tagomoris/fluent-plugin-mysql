@@ -120,7 +120,7 @@ DESC
       end
       max_lengths
     ensure
-      _client.close
+      if not _client.nil? then _client.close end
     end
 
     def format(tag, time, record)
