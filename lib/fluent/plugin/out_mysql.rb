@@ -15,6 +15,8 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
   config_param :sslcapath, :string, :default => nil
   config_param :sslcipher, :string, :default => nil
   config_param :sslverify, :bool, :default => nil
+  config_param :encoding, :string, :default => nil
+  config_param :collation, :string, :default => nil
 
   config_param :key_names, :string, :default => nil # nil allowed for json format
   config_param :sql, :string, :default => nil
@@ -112,6 +114,8 @@ class Fluent::MysqlOutput < Fluent::BufferedOutput
         :sslcapath => @sslcapath,
         :sslcipher => @sslcipher,
         :sslverify => @sslverify,
+        :encoding => @encoding,
+        :collation => @collation,
         :flags => Mysql2::Client::MULTI_STATEMENTS,
       })
   end

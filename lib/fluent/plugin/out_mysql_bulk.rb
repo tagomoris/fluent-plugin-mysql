@@ -29,6 +29,10 @@ module Fluent::Plugin
                          desc: "SSL cipher."
     config_param :sslverify, :bool, default: nil,
                              desc: "SSL Verify Server Certificate."
+    config_param :encoding, :string, default: nil,
+                         desc: "Connection encoding."
+    config_param :collation, :string, default: nil,
+                         desc: "Connection collation."
 
     config_param :column_names, :string,
                  desc: "Bulk insert column."
@@ -149,6 +153,8 @@ DESC
           sslcapath: @sslcapath,
           sslcipher: @sslcipher,
           sslverify: @sslverify,
+          encoding: @encoding,
+          collation: @collation,
           flags: Mysql2::Client::MULTI_STATEMENTS
         )
     end
