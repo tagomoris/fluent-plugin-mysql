@@ -143,6 +143,7 @@ DESC
           username: @username,
           password: @password,
           database: database,
+          encoding: 'utf8mb4',
           sslkey: @sslkey,
           sslcert: @sslcert,
           sslca: @sslca,
