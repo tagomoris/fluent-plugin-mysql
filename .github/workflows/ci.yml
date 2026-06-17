@@ -1,0 +1,57 @@
+name: Testing on Ubuntu
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  # Run monthly even without code changes: this plugin pins its dependencies
+  # loosely (e.g. fluentd, mysql2-cs-bind) and is maintained infrequently, so a
+  # scheduled build catches breakage caused by newer dependency or runner/MySQL
+  # image releases before users hit it.
+  schedule:
+    - cron: '0 0 1 * *'
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    # Allow the newest Ruby (4.0) to fail without blocking CI.
+    continue-on-error: ${{ matrix.ruby == '4.0' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ['3.2', '3.3', '3.4', '4.0']
+        os:
+          - ubuntu-latest
+    name: Ruby ${{ matrix.ruby }} unit testing on ${{ matrix.os }}
+    services:
+      mysql:
+        image: mysql:8.4
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: hogehoge
+          MYSQL_DATABASE: test_app_development
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install MySQL client development headers
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y default-libmysqlclient-dev
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+    - name: unit testing
+      env:
+        CI: true
+        MYSQL_HOST: 127.0.0.1
+        MYSQL_PORT: 3306
+        MYSQL_USER: root
+        MYSQL_PASSWORD: hogehoge
+        MYSQL_DATABASE: test_app_development
+      run: |
+        bundle install --jobs 4 --retry 3
+        bundle exec rake test
