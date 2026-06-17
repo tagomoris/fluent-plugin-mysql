@@ -172,10 +172,16 @@ DESC
       sql = "INSERT INTO #{table} (#{@column_names.map{|x| "`#{x.to_s.gsub('`', '``')}`"}.join(',')}) VALUES #{values.join(',')}"
       sql += @on_duplicate_key_update_sql if @on_duplicate_key_update
 
-      log.info "bulk insert values size (table: #{table}) => #{values.size}"
-      @handler.query("SET SESSION TRANSACTION ISOLATION LEVEL #{transaction_isolation_level}") if @transaction_isolation_level
-      @handler.xquery(sql)
-      @handler.close
+      begin
+        log.info "bulk insert values size (table: #{table}) => #{values.size}"
+        @handler.query("SET SESSION TRANSACTION ISOLATION LEVEL #{transaction_isolation_level}") if @transaction_isolation_level
+        @handler.xquery(sql)
+      rescue Exception
+        log.warn "an unexpected error occurred while query"
+      ensure
+        @handler.close
+      end
+
     end
 
     private
