@@ -3,6 +3,7 @@ require 'helper'
 require 'mysql2-cs-bind'
 require 'fluent/test/driver/output'
 require 'fluent/test/helpers'
+require 'fluent/plugin/buffer'
 require 'fluent/config'
 require 'time'
 
@@ -75,6 +76,22 @@ class MysqlBulkOutputIntegrationTest < Test::Unit::TestCase
     @client.query("SELECT * FROM `#{TABLE}` ORDER BY id").to_a
   end
 
+  # Builds a minimal buffer-chunk-like object so a single write/1 call can be
+  # exercised directly. Driving the error path through d.run is unreliable here
+  # because flush happens on a background thread that swallows the exception, so
+  # we call write/1 ourselves to observe how it handles a failing INSERT.
+  # extract_placeholders accepts a Metadata as its chunk argument (the "old
+  # plugin" path) and our database/table have no placeholders, so a Metadata
+  # extended with #msgpack_each is enough to drive write/1.
+  def build_chunk(records, tag: 'test', time: event_time("2016-09-26 12:00:00 UTC"))
+    rows = records.map { |record| [tag, time, record] }
+    chunk = Fluent::Plugin::Buffer::Metadata.new(nil, nil, nil)
+    chunk.define_singleton_method(:msgpack_each) do |&block|
+      rows.each { |row| block.call(*row) }
+    end
+    chunk
+  end
+
   def test_bulk_insert
     conf = base_config(%[
       column_names id,user_name,created_at
@@ -108,6 +125,47 @@ class MysqlBulkOutputIntegrationTest < Test::Unit::TestCase
     rows = select_all
     assert_equal(1, rows.size)
     assert_equal(50, rows[0]["user_name"].length)
+  end
+
+  # Regression test for the swallow-the-error approach proposed in
+  # https://github.com/tagomoris/fluent-plugin-mysql/pull/65 : a failing INSERT
+  # (here a NOT NULL violation, the exact error reported in that PR) must raise
+  # out of write/1 so Fluentd retries the chunk. If the error were rescued and
+  # swallowed, Fluentd would treat the flush as successful and silently drop
+  # every record in the chunk.
+  def test_failed_insert_raises_so_chunk_is_not_silently_dropped
+    conf = base_config(%[
+      column_names id,user_name
+      key_names id,user_name
+    ])
+    d = create_driver(conf)
+    chunk = build_chunk([{ "id" => nil, "user_name" => "alice" }]) # id is NOT NULL
+
+    assert_raise(Mysql2::Error) do
+      d.instance.write(chunk)
+    end
+
+    assert_equal(0, select_all.size)
+  end
+
+  # A successful flush keeps its MySQL connection open so the next flush reuses
+  # it instead of reconnecting every time.
+  def test_connection_is_reused_across_successful_writes
+    conf = base_config(%[
+      column_names id,user_name
+      key_names id,user_name
+    ])
+    d = create_driver(conf)
+    begin
+      d.instance.write(build_chunk([{ "id" => 1, "user_name" => "alice" }]))
+      first = d.instance.handler
+      d.instance.write(build_chunk([{ "id" => 2, "user_name" => "bob" }]))
+
+      assert_same(first, d.instance.handler)
+      assert_equal(2, select_all.size)
+    ensure
+      d.instance.close
+    end
   end
 
   def test_on_duplicate_key_update_with_custom_value

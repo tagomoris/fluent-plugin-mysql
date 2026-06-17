@@ -162,23 +162,53 @@ DESC
     def write(chunk)
       database, table = expand_placeholders(chunk)
       max_lengths = check_table_schema(database: database, table: table)
-      @handler = client(database)
-      values = []
-      values_template = "(#{ @column_names.map { |key| '?' }.join(',') })"
-      chunk.msgpack_each do |tag, time, data|
-        data = format_proc.call(tag, time, data, max_lengths)
-        values << Mysql2::Client.pseudo_bind(values_template, data)
+      # Reuse the connection across successful flushes instead of reconnecting
+      # every time. Open a new one only when there is no usable handler (the
+      # first flush, or the previous one was discarded by the error path below)
+      # or when the target database changed -- the INSERT uses an unqualified
+      # table name, so it must run on a connection bound to the right database.
+      if @handler.nil? || @handler_database != database
+        close_handler
+        @handler = client(database)
+        @handler_database = database
       end
-      sql = "INSERT INTO #{table} (#{@column_names.map{|x| "`#{x.to_s.gsub('`', '``')}`"}.join(',')}) VALUES #{values.join(',')}"
-      sql += @on_duplicate_key_update_sql if @on_duplicate_key_update
 
-      log.info "bulk insert values size (table: #{table}) => #{values.size}"
-      @handler.query("SET SESSION TRANSACTION ISOLATION LEVEL #{transaction_isolation_level}") if @transaction_isolation_level
-      @handler.xquery(sql)
-      @handler.close
+      begin
+        values = []
+        values_template = "(#{ @column_names.map { |key| '?' }.join(',') })"
+        chunk.msgpack_each do |tag, time, data|
+          data = format_proc.call(tag, time, data, max_lengths)
+          values << Mysql2::Client.pseudo_bind(values_template, data)
+        end
+        sql = "INSERT INTO #{table} (#{@column_names.map{|x| "`#{x.to_s.gsub('`', '``')}`"}.join(',')}) VALUES #{values.join(',')}"
+        sql += @on_duplicate_key_update_sql if @on_duplicate_key_update
+
+        log.info "bulk insert values size (table: #{table}) => #{values.size}"
+        @handler.query("SET SESSION TRANSACTION ISOLATION LEVEL #{transaction_isolation_level}") if @transaction_isolation_level
+        @handler.xquery(sql)
+      rescue
+        # Drop the (possibly broken) connection so the next retry reconnects, and
+        # re-raise: the error MUST propagate so Fluentd retries the chunk instead
+        # of treating the flush as successful and silently dropping the buffered
+        # records. Swallowing it here would lose the whole bulk batch.
+        close_handler
+        raise
+      end
+    end
+
+    def close
+      super
+      close_handler
     end
 
     private
+
+    def close_handler
+      return if @handler.nil?
+      @handler.close rescue nil
+      @handler = nil
+      @handler_database = nil
+    end
 
     def format_proc
       proc do |tag, time, record, max_lengths|

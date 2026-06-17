@@ -357,4 +357,87 @@ class MysqlBulkOutputTest < Test::Unit::TestCase
     assert_equal ['id','user_name','created_at','updated_at'], d.instance.key_names
     assert_equal ['id','user_name','created_at','updated_at'], d.instance.column_names
   end
+
+  class TestWriteConnectionHandling < self
+    # A fake MySQL handler that records #close calls. By default queries succeed
+    # (SHOW COLUMNS, issued by check_table_schema, returns an empty result set);
+    # pass fail_insert: true to make the INSERT raise.
+    class RecordingHandler
+      attr_reader :close_count
+
+      def initialize(fail_insert: false)
+        @close_count = 0
+        @fail_insert = fail_insert
+      end
+
+      def query(*); end
+
+      def xquery(sql = nil, *)
+        return [] if sql.to_s.start_with?('SHOW COLUMNS')
+        raise 'INSERT failed' if @fail_insert
+        [1]
+      end
+
+      def close
+        @close_count += 1
+      end
+    end
+
+    def build_chunk(records, tag: 'test', time: Time.now.to_i)
+      rows = records.map { |record| [tag, time, record] }
+      # write/1 calls expand_placeholders(chunk) and then chunk.msgpack_each.
+      # extract_placeholders accepts a Metadata as its chunk argument (its
+      # documented "old plugin" path) and our database/table have no
+      # placeholders, so a Metadata extended with #msgpack_each is enough to
+      # drive write/1 without the full buffer-chunk machinery.
+      chunk = create_metadata
+      chunk.define_singleton_method(:msgpack_each) do |&block|
+        rows.each { |row| block.call(*row) }
+      end
+      chunk
+    end
+
+    def test_write_propagates_error_and_closes_handler_on_failure
+      d = create_driver
+      handlers = []
+      d.instance.define_singleton_method(:client) do |_database|
+        handler = RecordingHandler.new(fail_insert: true)
+        handlers << handler
+        handler
+      end
+
+      chunk = build_chunk([{ 'id' => 1, 'user_name' => 'alice', 'created_at' => '2016-09-26 12:00:00' }])
+
+      assert_raise(RuntimeError) do
+        d.instance.write(chunk)
+      end
+
+      # write/1 opens its own handler after check_table_schema; that handler must
+      # be closed (and dropped) when the INSERT raises, so the next retry
+      # reconnects instead of reusing a broken connection.
+      assert_equal(1, handlers.last.close_count)
+      assert_nil(d.instance.handler)
+    end
+
+    def test_write_reuses_handler_across_successful_writes_and_closes_on_shutdown
+      d = create_driver
+      d.instance.define_singleton_method(:client) do |_database|
+        RecordingHandler.new
+      end
+
+      d.instance.write(build_chunk([{ 'id' => 1, 'user_name' => 'alice', 'created_at' => '2016-09-26 12:00:00' }]))
+      reused = d.instance.handler
+      d.instance.write(build_chunk([{ 'id' => 2, 'user_name' => 'bob', 'created_at' => '2016-09-26 12:00:00' }]))
+
+      # The INSERT handler is opened once and kept open: the second successful
+      # flush must reuse the same connection rather than reconnecting.
+      assert_same(reused, d.instance.handler)
+      assert_equal(0, reused.close_count)
+
+      # The held connection is released when the plugin shuts down.
+      d.instance.close
+      assert_equal(1, reused.close_count)
+      assert_nil(d.instance.handler)
+    end
+  end
 end
