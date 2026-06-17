@@ -153,14 +153,14 @@ DESC
         )
     end
 
-    def expand_placeholders(metadata)
-      database = extract_placeholders(@database, metadata).gsub('.', '_')
-      table = extract_placeholders(@table, metadata).gsub('.', '_')
+    def expand_placeholders(chunk)
+      database = extract_placeholders(@database, chunk).gsub('.', '_')
+      table = extract_placeholders(@table, chunk).gsub('.', '_')
       return database, table
     end
 
     def write(chunk)
-      database, table = expand_placeholders(chunk.metadata)
+      database, table = expand_placeholders(chunk)
       max_lengths = check_table_schema(database: database, table: table)
       @handler = client(database)
       values = []
