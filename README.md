@@ -5,7 +5,7 @@ fluent plugin mysql bulk insert is high performance and on duplicate key update 
 
 ## Note
 fluent-plugin-mysql-bulk merged this repository.
-
+This repository now includes the mysql_bulk plugin.
 [mysql plugin](README_mysql.md) is deprecated. You should use mysql_bulk.
 
 v0.1.5 only supports fluentd-0.12.X and v0.2.0 only supports fluentd-0.14.X.
@@ -33,6 +33,7 @@ table|bulk insert table (require)
 on_duplicate_key_update|on duplicate key update enable (true:false)
 on_duplicate_update_keys|on duplicate key update column, comma separator
 transaction_isolation_level|set transaction isolation level(default: nil)
+column_names_empty_to_null|Columns for which empty values should be converted to nil (null in SQL)
 
 ## Configuration Example(bulk insert)
 

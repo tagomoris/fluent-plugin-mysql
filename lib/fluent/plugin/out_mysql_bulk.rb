@@ -54,6 +54,9 @@ DESC
     config_param :transaction_isolation_level, :enum, list: [:read_uncommitted, :read_committed, :repeatable_read, :serializable], default: nil,
                  desc: "Set transaction isolation level."
 
+    config_param :column_names_empty_to_null, :string, default: nil,
+                 desc: "Columns for which empty values are stored as NULL (no quotes)"
+
     attr_accessor :handler
 
     def initialize
@@ -100,6 +103,7 @@ DESC
 
       @column_names = @column_names.split(',').collect(&:strip)
       @key_names = @key_names.nil? ? @column_names : @key_names.split(',').collect(&:strip)
+      @column_names_empty_to_null = @column_names_empty_to_null.split(',').collect(&:strip) if @column_names_empty_to_null
       @json_key_names = @json_key_names.split(',') if @json_key_names
       @unixtimestamp_key_names = @unixtimestamp_key_names.split(',') if @unixtimestamp_key_names
     end
@@ -199,6 +203,12 @@ DESC
 
             if @unixtimestamp_key_names && @unixtimestamp_key_names.include?(key)
               value = Time.at(value).strftime('%Y-%m-%d %H:%M:%S')
+            end
+
+            if @column_names_empty_to_null && @column_names_empty_to_null.include?(key)
+              if value.nil? || value.empty?
+                value = nil
+              end
             end
           end
           values << value
